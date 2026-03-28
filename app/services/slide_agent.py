@@ -18,15 +18,15 @@ from app.core.logging import get_logger
 from app.core.prompts.registry import get_prompt
 from app.core.schemas.presentation import Presentation
 from app.db.managers import VersionManager
-from app.services.agents.config import get_agent_config
-from app.services.agents.graph import HITLRequest, PresentationGraphBuilder, run_graph
-from app.services.agents.graph.tools import ALL_TOOLS, create_tool_executor
-from app.services.agents.skills import SkillStore
+from app.services.orchestration.config import get_agent_config
+from app.services.orchestration.graph import HITLRequest, PresentationGraphBuilder, run_graph
+from app.services.orchestration.graph.tools import ALL_TOOLS, create_tool_executor
+from app.services.orchestration.skills import SkillStore
 from app.services.pusher import trigger as pusher_trigger
 
 logger = get_logger(__name__)
 
-MODEL_NAME = "gemini-2.5-flash-preview-05-20"
+MODEL_NAME = "gemini-3-flash-preview"
 
 StatusCallback = Callable[[str, dict], None]
 
@@ -108,6 +108,8 @@ async def run_agent(
     pusher_channel_id: str | None = None,
     snapshot_messages: list | None = None,
     existing_presentation: Presentation | None = None,
+    slide_deck_id: str | None = None,
+    version_num: int | None = None,
 ) -> tuple[Presentation | None, AgentResult]:
     """Run or resume a presentation agent.
 
@@ -187,6 +189,8 @@ async def run_agent(
                 initial_messages=initial_messages,
                 presentation=existing_presentation,
                 pusher_channel_id=pusher_channel_id,
+                slide_deck_id=slide_deck_id,
+                version_num=version_num,
             )
         else:
             # First run — build from templates
@@ -208,6 +212,8 @@ async def run_agent(
                 recursion_limit=config.recursion_limit,
                 initial_messages=initial_messages,
                 pusher_channel_id=pusher_channel_id,
+                slide_deck_id=slide_deck_id,
+                version_num=version_num,
             )
 
         # Check for interrupt (HITL request)
@@ -245,7 +251,7 @@ async def run_agent(
                 complete=True,
                 output=output_data,
                 thread_id=thread_id,
-                messages=result.get("messages", []),
+                messages=[m for m in result.get("messages", []) if not isinstance(m, SystemMessage)],
             )
 
         # No output produced

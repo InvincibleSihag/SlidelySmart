@@ -1,12 +1,10 @@
 """Agent state definitions."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
-
-from app.core.schemas.presentation import Presentation
 
 
 class HITLRequest(BaseModel):
@@ -19,7 +17,7 @@ class HITLRequest(BaseModel):
     )
 
 
-class AgentState(BaseModel):
+class AgentState(TypedDict):
     """State for the presentation agent graph.
 
     Uses add_messages reducer for proper message accumulation.
@@ -29,6 +27,8 @@ class AgentState(BaseModel):
     """
 
     messages: Annotated[list[AnyMessage], add_messages]
-    presentation: Presentation  # Serialized Presentation — {title, theme, slides}
+    presentation: dict  # Serialized Presentation — {title, theme, slides}
     pusher_channel_id: str | None
     model_call_count: int
+    slide_deck_id: str | None
+    version_num: int | None

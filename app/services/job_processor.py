@@ -20,7 +20,7 @@ from app.core.schemas.presentation import SlideDeckPayload
 from app.db.managers import MessageManager, SnapshotManager, VersionManager
 from app.db.models import SlideDeck
 from app.db.session import SlidelySyncSession
-from app.services.agent import run_agent
+from app.services.slide_agent import run_agent
 from app.services.pusher import trigger as pusher_trigger
 
 logger = get_logger(__name__)
@@ -84,11 +84,15 @@ async def process_slide_deck(
 
     # Intermediate commit: mark as PROCESSING so client sees it immediately
     slide_deck.status = JobStatus.PROCESSING
+    slide_deck.hitl_request = None  # Clear stale HITL data from previous interrupt
     session.add(slide_deck)
     session.commit()
 
     def on_status(event: str, data: dict) -> None:
         _trigger(channel, event, data)
+
+    # Next version number for progressive HTML uploads during processing
+    next_version_num = slide_deck.current_version + 1
 
     try:
         output, result = await run_agent(
@@ -99,6 +103,8 @@ async def process_slide_deck(
             pusher_channel_id=channel,
             snapshot_messages=snapshot_messages,
             existing_presentation=existing_presentation,
+            slide_deck_id=deck_id,
+            version_num=next_version_num,
         )
     except Exception as exc:
         logger.exception("slide_deck_error", slide_deck_id=deck_id, error=str(exc))
@@ -111,6 +117,7 @@ async def process_slide_deck(
 
     if result.hitl_request:
         slide_deck.status = JobStatus.WAITING_FOR_INPUT
+        slide_deck.hitl_request = result.hitl_request.model_dump()
         session.add(slide_deck)
         session.commit()
 
@@ -124,11 +131,10 @@ async def process_slide_deck(
         # 1. Save full snapshot (messages only, overwrite)
         snapshot_manager.save(slide_deck.id, result.messages)
 
-        # 2. Persist UI messages: just the user query + last AI response
+        # 2. Persist AI response (user message already saved at API level)
         message_manager = MessageManager(session)
-        last_ai_msg = message_manager.persist_pair(
+        last_ai_msg = message_manager.persist_ai_message(
             slide_deck.id,
-            user_query=payload.user_query,
             agent_messages=result.messages,
         )
 

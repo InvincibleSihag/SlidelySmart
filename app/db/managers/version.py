@@ -48,11 +48,14 @@ class VersionManager:
         for slide in presentation.slides:
             hint = ""
             if slide.elements:
-                first = slide.elements[0].content
+                el = slide.elements[0]
+                first = el.content
                 if isinstance(first, str):
                     hint = first
                 elif isinstance(first, list) and first:
-                    hint = first[0] if isinstance(first[0], str) else str(first[0])
+                    hint = first[0]
+                elif el.table_data:
+                    hint = f"Table: {len(el.table_data)} rows"
                 if len(hint) > 60:
                     hint = hint[:57] + "..."
             lines.append(f'- {slide.id} ({slide.layout}): "{hint}"')

@@ -1,45 +1,30 @@
-<div class="slide slide-two-column" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
-  {% set ns = namespace(heading_done=false, col_split=false) %}
+{% from "_macros.html.j2" import render_element, slide_bg, el_attrs, element_style %}
+{#-
+  Two-column layout. Element order convention:
+  - First heading/title element → rendered as slide heading above columns
+  - Remaining elements split into left/right columns:
+    - Elements with metadata.column == "right" go right
+    - All others go left
+-#}
+<div class="slide slide-two-column" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
-    {% if element.type in ("heading", "title") and not ns.heading_done %}
-      <h2 class="slide-heading">{{ element.content }}</h2>
-      {% set ns.heading_done = true %}
+    {% if element.type in ("heading", "title") %}
+      <h2 class="slide-heading" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
+      {% break %}
     {% endif %}
   {% endfor %}
   <div class="columns">
     <div class="column column-left">
       {% for element in slide.elements %}
-        {% if element.type == "text" and not ns.col_split %}
-          <p class="slide-text">{{ element.content }}</p>
-          {% set ns.col_split = true %}
-        {% elif element.type == "bullets" and not ns.col_split %}
-          <ul class="slide-bullets">
-            {% if element.content is iterable and element.content is not string %}
-              {% for item in element.content %}
-                <li>{{ item }}</li>
-              {% endfor %}
-            {% endif %}
-          </ul>
-          {% set ns.col_split = true %}
+        {% if element.type not in ("heading", "title") and not (element.metadata and element.metadata.column == "right") %}
+          {{ render_element(element) }}
         {% endif %}
       {% endfor %}
     </div>
     <div class="column column-right">
       {% for element in slide.elements %}
-        {% if element.type == "text" and ns.col_split %}
-          <p class="slide-text">{{ element.content }}</p>
-        {% elif element.type == "bullets" and ns.col_split %}
-          <ul class="slide-bullets">
-            {% if element.content is iterable and element.content is not string %}
-              {% for item in element.content %}
-                <li>{{ item }}</li>
-              {% endfor %}
-            {% endif %}
-          </ul>
-        {% elif element.type == "image" %}
-          <div class="slide-image" {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
-            <span class="image-placeholder">{{ element.content }}</span>
-          </div>
+        {% if element.type not in ("heading", "title") and element.metadata and element.metadata.column == "right" %}
+          {{ render_element(element) }}
         {% endif %}
       {% endfor %}
     </div>

@@ -27,13 +27,20 @@ from langgraph.types import Command, interrupt
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.schemas.presentation import Presentation
-from app.services.agents.config import AgentConfig
-from app.services.agents.graph.state import AgentState, HITLRequest
-from app.services.agents.graph.streaming import SupportsStream, TriggerFn, stream_model_response
+from app.services.orchestration.config import AgentConfig
+from app.services.orchestration.graph.state import AgentState, HITLRequest
+from app.services.orchestration.graph.streaming import SupportsStream, TriggerFn, stream_model_response
+from app.services.slide_renderer import render_presentation
+from app.services.storage import upload_version_html
 
 logger = get_logger(__name__)
 
 ToolExecutorFn = Callable[[str, dict, Presentation], str]
+
+
+def _get_presentation(state: AgentState) -> Presentation:
+    """Validate and return the Presentation from raw state dict."""
+    return Presentation.model_validate(state.get("presentation") or {})
 
 
 def _get_db_connection_string() -> str:
@@ -151,26 +158,33 @@ class PresentationGraphBuilder:
     def handle_tool_calls(self, state: AgentState) -> dict:
         """Execute slide manipulation tools and return ToolMessages."""
         last = state["messages"][-1]
-        presentation = Presentation.model_validate(state.get("presentation") or {})
+        presentation = _get_presentation(state)
         tool_messages = []
 
         for tc in last.tool_calls:
             result_text = self._tool_executor(tc["name"], tc["args"], presentation)
             tool_messages.append(ToolMessage(content=result_text, tool_call_id=tc["id"]))
 
-        # Emit slide count update via Pusher
         channel = state.get("pusher_channel_id")
+        deck_id = state.get("slide_deck_id")
+        version_num = state.get("version_num")
+
+        # Progressively upload rendered HTML to the next version's GCS path
+        if deck_id and version_num and presentation.slides:
+            html = render_presentation(presentation)
+            upload_version_html(deck_id, version_num, html)
+
+        # Emit lightweight ping so frontend fetches updated slides
         if channel:
-            self._trigger(channel, "agent_status", {
-                "stage": "processing",
-                "message": f"Working on slides... ({len(presentation.slides)} slides so far)",
+            self._trigger(channel, "slides_updated", {
+                "slide_count": len(presentation.slides),
             })
 
         return {"messages": tool_messages, "presentation": presentation.model_dump()}
 
     def finalize(self, state: AgentState) -> dict:
         """Package the final presentation."""
-        presentation = Presentation.model_validate(state.get("presentation") or {})
+        presentation = _get_presentation(state)
         logger.info("finalize", slide_count=len(presentation.slides))
         return {"presentation": presentation.model_dump()}
 
@@ -224,6 +238,8 @@ async def run_graph(
     initial_messages: list[AnyMessage] | None = None,
     resume_value: str | None = None,
     pusher_channel_id: str | None = None,
+    slide_deck_id: str | None = None,
+    version_num: int | None = None,
 ) -> dict:
     """Run or resume the graph.
 
@@ -250,5 +266,7 @@ async def run_graph(
         "presentation": (presentation or Presentation()).model_dump(),
         "pusher_channel_id": pusher_channel_id,
         "model_call_count": 0,
+        "slide_deck_id": slide_deck_id,
+        "version_num": version_num,
     }
     return await graph.ainvoke(initial_state, config=config)

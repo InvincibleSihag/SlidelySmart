@@ -16,8 +16,8 @@ Example:
   "id": "slide-1",
   "layout": "title",
   "elements": [
-    {"type": "title", "content": "The Future of AI"},
-    {"type": "subtitle", "content": "How Artificial Intelligence is Reshaping Industries — March 2025"}
+    {"id": "el-1", "type": "title", "content": "The Future of AI"},
+    {"id": "el-2", "type": "subtitle", "content": "How Artificial Intelligence is Reshaping Industries — March 2025"}
   ],
   "notes": "Welcome the audience. Set context for the presentation."
 }
@@ -36,14 +36,14 @@ Tips:
 - Don't combine multiple body element types on one content slide
 - If you need both bullets and a table, use two slides or `two_column`
 
-Example:
+Example (with styled heading and rich text in bullets):
 ```json
 {
   "id": "slide-3",
   "layout": "content",
   "elements": [
-    {"type": "heading", "content": "Key Benefits"},
-    {"type": "bullets", "content": ["Increased efficiency", "Cost reduction", "Better accuracy", "Scalability"]}
+    {"id": "el-1", "type": "heading", "content": "Key Benefits", "style": {"color": "#e94560"}},
+    {"id": "el-2", "type": "bullets", "content": ["**Increased efficiency** across all teams", "Cost reduction of *up to 40%*", "Better accuracy", "Scalability"]}
   ],
   "notes": "Emphasize the cost reduction point — it's the strongest selling point."
 }
@@ -65,7 +65,8 @@ Primary use: Comparisons, pros/cons, side-by-side data.
 
 Recommended elements:
 - `heading` (required) — Slide topic
-- Two body elements that will be rendered side by side (in order: left, right)
+- Two body elements: one for left column, one for right column
+- Right column elements must have `"metadata": {"column": "right"}`
 - Common patterns: bullets + bullets, text + image, bullets + table
 
 Example:
@@ -74,9 +75,9 @@ Example:
   "id": "slide-5",
   "layout": "two_column",
   "elements": [
-    {"type": "heading", "content": "Cloud vs On-Premise"},
-    {"type": "bullets", "content": ["Scalable", "Pay-as-you-go", "Managed services"]},
-    {"type": "bullets", "content": ["Full control", "One-time cost", "Data sovereignty"]}
+    {"id": "el-1", "type": "heading", "content": "Cloud vs On-Premise"},
+    {"id": "el-2", "type": "bullets", "content": ["Scalable", "Pay-as-you-go", "Managed services"]},
+    {"id": "el-3", "type": "bullets", "content": ["Full control", "One-time cost", "Data sovereignty"], "metadata": {"column": "right"}}
   ]
 }
 ```
@@ -102,9 +103,9 @@ Example:
   "id": "slide-7",
   "layout": "image_text",
   "elements": [
-    {"type": "heading", "content": "Our Team"},
-    {"type": "image", "content": "Team photo at annual retreat", "metadata": {"alt": "Team photo"}},
-    {"type": "text", "content": "A diverse team of 50+ engineers, designers, and product managers across 12 countries."}
+    {"id": "el-1", "type": "heading", "content": "Our Team"},
+    {"id": "el-2", "type": "image", "content": "Team photo at annual retreat", "metadata": {"alt": "Team photo"}},
+    {"id": "el-3", "type": "text", "content": "A diverse team of 50+ engineers, designers, and product managers across 12 countries."}
   ]
 }
 ```

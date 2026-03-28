@@ -74,6 +74,7 @@ class SlideDeck(BaseDefaultMixinDbModel, BaseDbModel):
     status: str = Column(Enum(JobStatus), nullable=False, default=JobStatus.QUEUED)
     current_version: int = Column(Integer, nullable=False, default=0)
     current_thread_id: Optional[str] = Column(String, nullable=True)
+    hitl_request: Optional[dict] = Column(JSONB, nullable=True)
     error_log: Optional[str] = Column(String, nullable=True)
     completed_at: Optional[datetime] = Column(DateTime(timezone=True), nullable=True)
 

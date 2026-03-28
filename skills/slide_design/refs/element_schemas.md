@@ -2,6 +2,47 @@
 
 Detailed format specifications for each element type.
 
+Every element must have an `id` (unique within the slide, e.g. `el-1`), a `type`, and `content`.
+
+## Rich Text (Inline Markdown)
+
+All text content supports inline markdown formatting:
+- `**bold text**` → renders as **bold**
+- `*italic text*` → renders as *italic*
+- `` `inline code` `` → renders as `code`
+- `[link text](url)` → renders as a clickable link
+
+Use rich text naturally in any string content — titles, headings, text, bullets, quotes, table cells.
+
+## Element Style
+
+Any element can have an optional `style` object for visual overrides:
+
+```json
+{
+  "id": "el-1",
+  "type": "heading",
+  "content": "Key Results",
+  "style": {
+    "font_size": "32px",
+    "font_weight": "bold",
+    "color": "#e94560",
+    "text_align": "center"
+  }
+}
+```
+
+Available style properties:
+- `font_size` — e.g. `"24px"`, `"1.5em"`
+- `font_weight` — e.g. `"bold"`, `"normal"`, `"600"`
+- `font_style` — e.g. `"italic"`, `"normal"`
+- `color` — text color, e.g. `"#ff0000"`
+- `text_align` — e.g. `"left"`, `"center"`, `"right"`
+- `background_color` — element background color
+- `opacity` — `0.0` to `1.0`
+
+Style is optional. When omitted, theme defaults apply.
+
 ## `title`
 - **content**: `string` — The main title text
 - **metadata**: not used
@@ -23,14 +64,14 @@ Detailed format specifications for each element type.
 - Tip: If you need more than 3 sentences, use speaker notes for the overflow
 
 ## `bullets`
-- **content**: `list[string]` — Each string is one bullet point
-- **metadata**: not used
+- **content**: `list[string]` — Each item is a bullet point.
+- **metadata**: not used (except `{"column": "right"}` for two_column layout)
 - Rules:
   - Maximum 6 bullets per slide
-  - Each bullet should be one line (no sub-bullets)
+  - Each bullet should be one line
   - Start each bullet with an action verb or key noun
 
-Example content: `["Increased revenue by 25%", "Reduced churn to 3%", "Expanded to 5 new markets"]`
+Example: `["Revenue up 25%", "Churn down to 3%", "5 new markets"]`
 
 ## `numbered_list`
 - **content**: `list[string]` — Each string is one numbered item
@@ -46,6 +87,7 @@ Example content: `["Increased revenue by 25%", "Reduced churn to 3%", "Expanded 
 Example:
 ```json
 {
+  "id": "el-3",
   "type": "image",
   "content": "Bar chart showing quarterly revenue growth",
   "metadata": {"alt": "Revenue growth Q1-Q4 2024"}
@@ -65,6 +107,7 @@ Example:
 Example:
 ```json
 {
+  "id": "el-2",
   "type": "code",
   "content": "def hello():\n    print('Hello, world!')",
   "metadata": {"language": "python"}
@@ -72,20 +115,26 @@ Example:
 ```
 
 ## `table`
-- **content**: `list[list[string]]` — 2D array where the first row is the header
+- **content**: not used (set to `null` or omit)
+- **table_data**: `list[list[string]]` — 2D array where the first row is the header
 - **metadata**: not used
 - Rules:
   - First row is always treated as the header
   - All rows must have the same number of columns
   - Keep tables small (max 5 columns, 6-8 data rows)
+  - Cell text supports inline markdown (bold, italic, etc.)
 
-Example content:
+Example:
 ```json
-[
-  ["Metric", "Q1", "Q2", "Q3"],
-  ["Revenue", "$1.2M", "$1.5M", "$1.8M"],
-  ["Users", "10K", "15K", "22K"]
-]
+{
+  "id": "el-2",
+  "type": "table",
+  "table_data": [
+    ["Metric", "Q1", "Q2", "Q3"],
+    ["Revenue", "$1.2M", "**$1.5M**", "$1.8M"],
+    ["Users", "10K", "15K", "*22K*"]
+  ]
+}
 ```
 
 ## `notes`

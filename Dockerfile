@@ -17,6 +17,7 @@ COPY alembic.ini .
 COPY app ./app
 COPY prompts ./prompts
 COPY templates ./templates
+COPY skills ./skills
 
 ENV PORT=8080
 EXPOSE 8080

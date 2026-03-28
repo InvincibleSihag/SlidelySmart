@@ -1,31 +1,34 @@
-import type { ThinkingStepData } from "../../types";
-import { ThinkingStep } from "./ThinkingStep";
-
 interface ThinkingBlockProps {
-  steps: ThinkingStepData[];
-  activeStep: number;
-  completedSteps: Set<number>;
+  text: string;
 }
 
-export function ThinkingBlock({ steps, activeStep, completedSteps }: ThinkingBlockProps) {
+export function ThinkingBlock({ text }: ThinkingBlockProps) {
   return (
     <div className="msg-appear" style={{ maxWidth: "85%" }}>
-      <div style={{ padding: "14px 0", display: "flex", flexDirection: "column", gap: 2 }}>
-        <div style={{
-          fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-          color: "rgba(0,0,0,0.25)", textTransform: "uppercase",
-          letterSpacing: "0.1em", marginBottom: 8,
-        }}>
-          Thinking
+      <div style={{ padding: "14px 0", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 14, height: 14, borderRadius: "50%",
+            border: "1.5px solid #000", borderTopColor: "transparent",
+            animation: "spin 0.8s linear infinite", flexShrink: 0,
+          }} />
+          <div style={{
+            fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+            color: "rgba(0,0,0,0.25)", textTransform: "uppercase",
+            letterSpacing: "0.1em",
+          }}>
+            Thinking
+          </div>
         </div>
-        {steps.map((step, i) => (
-          <ThinkingStep
-            key={i}
-            step={step}
-            isActive={activeStep === i}
-            isComplete={completedSteps.has(i)}
-          />
-        ))}
+        {text && (
+          <div style={{
+            fontSize: 13, fontFamily: "'DM Sans', sans-serif",
+            color: "rgba(0,0,0,0.5)", lineHeight: 1.5,
+            paddingLeft: 22, maxHeight: 120, overflowY: "auto",
+          }}>
+            {text}
+          </div>
+        )}
       </div>
     </div>
   );

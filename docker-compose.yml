@@ -1,25 +1,64 @@
 services:
   web:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 9753 --reload
+             --reload-dir /app/app --reload-dir /app/prompts
+             --reload-dir /app/templates --reload-dir /app/skills"
     ports:
-      - "8080:8080"
-    env_file: .env
+      - "9753:9753"
+    env_file: .local.env
+    environment:
+      DATABASE_URL: postgresql://slidely:slidely@db:5432/slidely
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      PORT: "9753"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - .:/app
+      - /app/venv
 
   worker:
     build: .
-    command: celery -A app.services.celery_app worker --loglevel=info
-    env_file: .env
+    command: >
+      sh -c "watchfiles --filter python
+      'celery -A app.services.celery_app worker --loglevel=info -P solo'
+      app/"
+    env_file: .local.env
+    environment:
+      DATABASE_URL: postgresql://slidely:slidely@db:5432/slidely
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - .:/app
+      - /app/venv
+
+  frontend:
+    build:
+      context: ./AasumSlidely
+      target: dev
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_BASE_URL: http://localhost:9753
+      VITE_PUSHER_KEY: dfb6c7d621fe783518a5
+      VITE_PUSHER_CLUSTER: ap2
+    depends_on:
+      - web
+    volumes:
+      - ./AasumSlidely:/app
+      - /app/node_modules
 
   redis:
     image: redis:7-alpine
@@ -36,6 +75,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slidely"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
 volumes:
   pgdata:

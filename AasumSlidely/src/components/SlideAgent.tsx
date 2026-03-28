@@ -1,76 +1,74 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import type { ChatItem, HITLSubmitData, JobStatus, ThinkingStepData } from "../types";
+import { useState, useRef, useCallback, useEffect } from "react";
+import type { HITLSubmitData } from "../types";
+import { useJobStore } from "../stores/job-store";
+import { usePusherJob } from "../hooks/usePusherJob";
+import { useJobRecovery, saveDeckId, clearDeckId } from "../hooks/useJobRecovery";
+import { postJob, postResumeJob } from "../lib/api";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatBody } from "./chat/ChatBody";
 import { ChatInput } from "./chat/ChatInput";
 import { SlidePanel } from "./slides/SlidePanel";
 
-const THINKING_STEPS: ThinkingStepData[] = [
-  { label: "Understanding request" },
-  { label: "Structuring narrative" },
-  { label: "Designing layout" },
-  { label: "Generating content" },
-  { label: "Refining visuals" },
-];
-
 export function SlideAgent() {
-  const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   const [input, setInput] = useState("");
-  const [status, setStatus] = useState<JobStatus | "ready">("ready");
-  const [thinkingStep, setThinkingStep] = useState(-1);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-  const [showSlidePanel, setShowSlidePanel] = useState(false);
-  const [slidesHtml, setSlidesHtml] = useState<string | null>(null);
-  const [slideCount, setSlideCount] = useState(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  const isGenerating = status === "processing";
-  const isWaitingHITL = status === "waiting_for_input";
-  const inputDisabled = isGenerating || isWaitingHITL;
+  const {
+    deckId, phase, chatItems, slidesHtml, slideCount,
+    showSlidePanel, lastThinkingText,
+    appendChatItem, setPhase, startJob,
+    markHitlSubmitted, handleJobFailed,
+  } = useJobStore();
 
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-  }, []);
+  // Recover state on page refresh
+  useJobRecovery();
 
-  useEffect(scrollToBottom, [chatItems, thinkingStep, isWaitingHITL, scrollToBottom]);
+  // Subscribe to Pusher events for active job
+  usePusherJob(deckId);
 
-  // ─── Placeholder handlers (business logic will replace these) ───
+  // Auto-scroll to bottom when chat updates
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatItems, lastThinkingText, phase]);
 
-  const handleSend = useCallback(() => {
+  // Clear persisted deck ID on terminal states
+  useEffect(() => {
+    if (phase === "completed" || phase === "failed") {
+      clearDeckId();
+    }
+  }, [phase]);
+
+  const isGenerating = phase === "processing" || phase === "queued" || phase === "submitting";
+  const isWaitingHITL = phase === "waiting_for_input";
+  const inputDisabled = isGenerating || isWaitingHITL || phase === "hitl_submitting";
+
+  const handleSend = useCallback(async () => {
     if (!input.trim() || inputDisabled) return;
     const msg = input.trim();
     setInput("");
 
-    setChatItems((prev) => [
-      ...prev,
-      { type: "message", role: "user", content: msg, timestamp: new Date() },
-    ]);
+    // Optimistic: add user message immediately
+    appendChatItem({
+      type: "message",
+      role: "user",
+      content: msg,
+      timestamp: new Date(),
+    });
 
-    // TODO: call API to create job, start polling
-    // For now just show the panel
-    setShowSlidePanel(true);
-    setStatus("processing");
-    setThinkingStep(0);
+    setPhase("submitting");
 
-    // Simulate thinking steps (will be replaced by real polling)
-    void (async () => {
-      for (let i = 0; i < THINKING_STEPS.length; i++) {
-        setThinkingStep(i);
-        await new Promise((r) => setTimeout(r, 1200));
-        setCompletedSteps((prev) => new Set([...prev, i]));
-      }
-      setThinkingStep(-1);
-      setStatus("completed");
-      setChatItems((prev) => [
-        ...prev,
-        {
-          type: "message", role: "assistant",
-          content: "Your presentation is ready. Click any slide to preview it, or ask me to adjust anything.",
-          timestamp: new Date(),
-        },
-      ]);
-    })();
-  }, [input, inputDisabled]);
+    try {
+      const response = await postJob({
+        prompt: msg,
+        job_id: phase === "completed" ? deckId ?? undefined : undefined,
+      });
+
+      startJob(response.job_id);
+      saveDeckId(response.job_id);
+    } catch {
+      handleJobFailed("Failed to create job. Please try again.");
+    }
+  }, [input, inputDisabled, deckId, phase, appendChatItem, setPhase, startJob, handleJobFailed]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -83,13 +81,20 @@ export function SlideAgent() {
     setInput(text);
   }, []);
 
-  const handleHITLSubmit = useCallback((_hitlId: string, _data: HITLSubmitData) => {
-    // TODO: call API to resume job with human response
-  }, []);
+  const handleHITLSubmit = useCallback(async (hitlId: string, data: HITLSubmitData) => {
+    if (!deckId) return;
 
-  // Reset for new conversation — exposed for future use
-  void setSlidesHtml;
-  void setSlideCount;
+    markHitlSubmitted(hitlId, data);
+    setPhase("hitl_submitting");
+
+    const humanResponse = data.custom || data.selected.join(", ");
+    try {
+      await postResumeJob(deckId, { human_response: humanResponse });
+      setPhase("processing");
+    } catch {
+      handleJobFailed("Failed to submit response. Please try again.");
+    }
+  }, [deckId, markHitlSubmitted, setPhase, handleJobFailed]);
 
   return (
     <div style={{
@@ -102,14 +107,12 @@ export function SlideAgent() {
         transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
         display: "flex", flexDirection: "column", height: "100%",
       }}>
-        <ChatHeader status={status} slideCount={slideCount} />
+        <ChatHeader status={phase} slideCount={slideCount} />
 
         <ChatBody
           chatItems={chatItems}
           isGenerating={isGenerating}
-          thinkingSteps={THINKING_STEPS}
-          activeThinkingStep={thinkingStep}
-          completedSteps={completedSteps}
+          thinkingText={lastThinkingText}
           onSuggestionClick={handleSuggestionClick}
           onHITLSubmit={handleHITLSubmit}
           chatEndRef={chatEndRef}

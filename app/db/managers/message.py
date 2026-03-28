@@ -7,48 +7,64 @@ from app.db.session import SlidelySyncSession
 
 
 class MessageManager:
-    """Persists user/assistant message pairs for client-facing display."""
+    """Persists user/assistant messages for client-facing display."""
 
     def __init__(self, session: SlidelySyncSession):
         self._session = session
 
-    def persist_pair(
+    def get_all(self, slide_deck_id: UUID) -> list[Message]:
+        """Return all messages for a slide deck, ordered by creation time."""
+        return (
+            self._session.query(Message)
+            .filter(Message.slide_deck_id == slide_deck_id)
+            .order_by(Message.created_at)
+            .all()
+        )
+
+    def persist_user_message(
         self,
         slide_deck_id: UUID,
-        user_query: str | None,
+        content: str,
+    ) -> Message:
+        """Persist user message immediately when job starts.
+
+        Called eagerly so the message is visible to GET even while
+        the agent is still processing.
+        """
+        msg = Message(
+            slide_deck_id=slide_deck_id,
+            message_type="human",
+            message_content=content.strip(),
+        )
+        self._session.add(msg)
+        self._session.flush()
+        return msg
+
+    def persist_ai_message(
+        self,
+        slide_deck_id: UUID,
         agent_messages: list,
     ) -> Message | None:
-        """Persist the user query + last AI text response for this run.
+        """Persist the last AI text response on completion.
 
-        Previous run messages were already stored. UI only needs
-        user/assistant pairs per run, with the AI message linked to the version.
+        Scans agent messages in reverse to find the final assistant
+        text response (ignoring tool calls and empty messages).
 
-        Returns the last AI message record, or None.
+        Returns the AI message record, or None if no text response found.
         """
-        last_ai_message: Message | None = None
-
-        # Store user query
-        if user_query and user_query.strip():
-            self._session.add(Message(
-                slide_deck_id=slide_deck_id,
-                message_type="human",
-                message_content=user_query.strip(),
-            ))
-
-        # Find and store last AI text response
         for msg in reversed(agent_messages):
             if msg.type != "ai":
                 continue
             content = msg.content if isinstance(msg.content, str) else str(msg.content)
             if not content.strip():
                 continue
-            last_ai_message = Message(
+            ai_msg = Message(
                 slide_deck_id=slide_deck_id,
                 message_type="ai",
                 message_content=content,
             )
-            self._session.add(last_ai_message)
-            break
+            self._session.add(ai_msg)
+            self._session.flush()
+            return ai_msg
 
-        self._session.flush()
-        return last_ai_message
+        return None

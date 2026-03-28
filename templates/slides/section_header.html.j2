@@ -1,9 +1,10 @@
-<div class="slide slide-section-header" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+{% from "_macros.html.j2" import slide_bg, el_attrs, element_style %}
+<div class="slide slide-section-header" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
     {% if element.type in ("title", "heading") %}
-      <h2 class="section-title">{{ element.content }}</h2>
+      <h2 class="section-title" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
     {% elif element.type in ("subtitle", "text") %}
-      <p class="section-subtitle">{{ element.content }}</p>
+      <p class="section-subtitle" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</p>
     {% endif %}
   {% endfor %}
 </div>

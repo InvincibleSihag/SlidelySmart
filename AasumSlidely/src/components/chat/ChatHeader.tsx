@@ -1,15 +1,18 @@
-import type { JobStatus } from "../../types";
+import type { Phase } from "../../types";
 
 interface ChatHeaderProps {
-  status: JobStatus | "ready";
+  status: Phase;
   slideCount: number;
 }
 
-function getStatusLabel(status: JobStatus | "ready"): string {
+function getStatusLabel(status: Phase): string {
   switch (status) {
+    case "submitting":
+    case "queued": return "queued\u2026";
     case "processing": return "generating\u2026";
     case "waiting_for_input": return "waiting for input";
-    case "queued": return "queued\u2026";
+    case "hitl_submitting": return "resuming\u2026";
+    case "reconnecting": return "reconnecting\u2026";
     case "failed": return "error";
     case "completed": return "done";
     default: return "ready";

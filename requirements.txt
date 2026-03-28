@@ -7,11 +7,13 @@ google-cloud-storage>=3.9.0
 pydantic-settings>=2.12.0
 structlog>=24.4.0
 jinja2>=3.1.0
+mistune>=3.1.0
 google-auth>=2.48.0
 httpx>=0.28.1
 alembic>=1.18.4
 celery[redis]>=5.4.0
 redis>=5.0.0
+watchfiles>=1.0.0
 # LangGraph Agent
 langgraph>=0.4.0
 langchain-core>=0.3.0

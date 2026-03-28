@@ -1,4 +1,4 @@
-import type { ChatItem, HITLSubmitData, ThinkingStepData } from "../../types";
+import type { ChatItem, HITLSubmitData } from "../../types";
 import { ChatMessage } from "./ChatMessage";
 import { EmptyState } from "./EmptyState";
 import { ThinkingBlock } from "./ThinkingBlock";
@@ -7,16 +7,14 @@ import { HITLForm } from "../hitl/HITLForm";
 interface ChatBodyProps {
   chatItems: ChatItem[];
   isGenerating: boolean;
-  thinkingSteps: ThinkingStepData[];
-  activeThinkingStep: number;
-  completedSteps: Set<number>;
+  thinkingText: string;
   onSuggestionClick: (text: string) => void;
   onHITLSubmit: (hitlId: string, data: HITLSubmitData) => void;
   chatEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function ChatBody({
-  chatItems, isGenerating, thinkingSteps, activeThinkingStep, completedSteps,
+  chatItems, isGenerating, thinkingText,
   onSuggestionClick, onHITLSubmit, chatEndRef,
 }: ChatBodyProps) {
   return (
@@ -58,13 +56,7 @@ export function ChatBody({
       })}
 
       {/* Thinking block */}
-      {isGenerating && activeThinkingStep >= 0 && (
-        <ThinkingBlock
-          steps={thinkingSteps}
-          activeStep={activeThinkingStep}
-          completedSteps={completedSteps}
-        />
-      )}
+      {isGenerating && <ThinkingBlock text={thinkingText} />}
 
       <div ref={chatEndRef} />
     </div>

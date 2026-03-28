@@ -1,15 +1,6 @@
-<div class="slide slide-title" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+{% from "_macros.html.j2" import render_element, slide_bg %}
+<div class="slide slide-title" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
-    {% if element.type == "title" %}
-      <h1 class="slide-main-title">{{ element.content }}</h1>
-    {% elif element.type == "subtitle" %}
-      <p class="slide-subtitle">{{ element.content }}</p>
-    {% elif element.type == "text" %}
-      <p class="slide-text">{{ element.content }}</p>
-    {% elif element.type == "image" %}
-      <div class="slide-image" {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
-        <span class="image-placeholder">{{ element.content }}</span>
-      </div>
-    {% endif %}
+    {{ render_element(element) }}
   {% endfor %}
 </div>

@@ -1,41 +1,22 @@
-<div class="slide slide-image-text" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+{% from "_macros.html.j2" import render_element, slide_bg, el_attrs, element_style %}
+<div class="slide slide-image-text" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
     {% if element.type in ("heading", "title") %}
-      <h2 class="slide-heading">{{ element.content }}</h2>
+      <h2 class="slide-heading" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
     {% endif %}
   {% endfor %}
   <div class="image-text-layout">
     <div class="image-side">
       {% for element in slide.elements %}
         {% if element.type == "image" %}
-          <div class="slide-image" {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
-            <span class="image-placeholder">{{ element.content }}</span>
-          </div>
+          {{ render_element(element) }}
         {% endif %}
       {% endfor %}
     </div>
     <div class="text-side">
       {% for element in slide.elements %}
-        {% if element.type == "text" %}
-          <p class="slide-text">{{ element.content }}</p>
-        {% elif element.type == "bullets" %}
-          <ul class="slide-bullets">
-            {% if element.content is iterable and element.content is not string %}
-              {% for item in element.content %}
-                <li>{{ item }}</li>
-              {% endfor %}
-            {% endif %}
-          </ul>
-        {% elif element.type == "numbered_list" %}
-          <ol class="slide-numbered">
-            {% if element.content is iterable and element.content is not string %}
-              {% for item in element.content %}
-                <li>{{ item }}</li>
-              {% endfor %}
-            {% endif %}
-          </ol>
-        {% elif element.type == "quote" %}
-          <blockquote class="slide-quote">{{ element.content }}</blockquote>
+        {% if element.type not in ("heading", "title", "image") %}
+          {{ render_element(element) }}
         {% endif %}
       {% endfor %}
     </div>

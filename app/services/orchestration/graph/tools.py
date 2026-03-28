@@ -12,10 +12,18 @@ from typing import TYPE_CHECKING, Callable, Literal
 from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
-from app.core.schemas.presentation import Presentation, Slide, SlideElement
+from app.core.schemas.presentation import (
+    ElementMetadata,
+    ElementStyle,
+    ElementType,
+    LayoutType,
+    Presentation,
+    Slide,
+    SlideElement,
+)
 
 if TYPE_CHECKING:
-    from app.services.agents.skills import SkillStore
+    from app.services.orchestration.skills import SkillStore
 
 logger = get_logger(__name__)
 
@@ -28,16 +36,14 @@ class CreateSlide(BaseModel):
     """Create a new slide in the presentation.
 
     Use this tool to add a slide. Provide a unique id, layout type, and elements.
-    Each element has a type and content. Supported element types:
+    Each element has an id, type, and content. Supported element types:
     title, subtitle, heading, text, bullets, numbered_list, image, quote, code, table, notes.
     """
 
     id: str = Field(..., description="Unique slide ID, e.g. 'slide-1'")
-    layout: Literal["title", "content", "section_header", "two_column", "blank", "image_text"] = Field(
-        ..., description="Slide layout type"
-    )
-    elements: list[dict] = Field(
-        ..., description="List of slide elements, each with 'type' and 'content' keys"
+    layout: LayoutType = Field(..., description="Slide layout type")
+    elements: list[SlideElement] = Field(
+        ..., description="List of slide elements"
     )
     notes: str = Field(default="", description="Speaker notes for this slide")
 
@@ -46,11 +52,13 @@ class EditSlide(BaseModel):
     """Edit an existing slide by its ID.
 
     Provide the slide ID and the fields to update. Only provided fields will be changed.
+    Use this for full rewrites (replacing all elements or changing layout).
+    For single-element changes, prefer EditElement.
     """
 
     id: str = Field(..., description="ID of the slide to edit")
-    elements: list[dict] | None = Field(default=None, description="New elements (replaces all)")
-    layout: str | None = Field(default=None, description="New layout type")
+    elements: list[SlideElement] | None = Field(default=None, description="New elements (replaces all)")
+    layout: LayoutType | None = Field(default=None, description="New layout type")
     notes: str | None = Field(default=None, description="New speaker notes")
 
 
@@ -64,6 +72,41 @@ class ReorderSlides(BaseModel):
     """Reorder slides by providing the desired sequence of slide IDs."""
 
     slide_ids: list[str] = Field(..., description="Ordered list of slide IDs")
+
+
+class EditElement(BaseModel):
+    """Edit a single element within a slide by element ID.
+
+    Use patch semantics: only provided fields are updated. Prefer this over
+    EditSlide when changing a single element (e.g., updating one bullet point,
+    changing a heading, modifying image metadata or style).
+    """
+
+    slide_id: str = Field(..., description="ID of the slide containing the element")
+    element_id: str = Field(..., description="ID of the element to edit")
+    content: str | list[str] | None = Field(default=None, description="New content (replaces existing)")
+    table_data: list[list[str]] | None = Field(default=None, description="2D array for table elements. First row is the header row.")
+    metadata: ElementMetadata | None = Field(default=None, description="Metadata updates (shallow-merged with existing)")
+    type: ElementType | None = Field(default=None, description="New element type")
+    style: ElementStyle | None = Field(default=None, description="Style overrides (shallow-merged with existing)")
+
+
+class AddElement(BaseModel):
+    """Add a new element to an existing slide.
+
+    Use this to insert an element at a specific position or append to the end.
+    """
+
+    slide_id: str = Field(..., description="ID of the slide to add the element to")
+    element: SlideElement = Field(..., description="The element to add")
+    position: int | None = Field(default=None, description="Insert at this index. None = append to end.")
+
+
+class RemoveElement(BaseModel):
+    """Remove a single element from a slide by element ID."""
+
+    slide_id: str = Field(..., description="ID of the slide containing the element")
+    element_id: str = Field(..., description="ID of the element to remove")
 
 
 class AskHuman(BaseModel):
@@ -113,7 +156,7 @@ class ReadSkillFile(BaseModel):
 # ---------------------------------------------------------------------------
 
 # Slide manipulation tools
-SLIDE_TOOLS = [CreateSlide, EditSlide, DeleteSlide, ReorderSlides, AskHuman]
+SLIDE_TOOLS = [CreateSlide, EditSlide, EditElement, AddElement, RemoveElement, DeleteSlide, ReorderSlides, AskHuman]
 
 # Skill knowledge tools (read-only, no slide side effects)
 SKILL_TOOLS = [LoadSkill, ReadSkillFile]
@@ -128,10 +171,11 @@ ALL_TOOLS = SLIDE_TOOLS + SKILL_TOOLS
 
 def _execute_create_slide(args: dict, presentation: Presentation) -> str:
     """Add a new slide to the presentation."""
+    elements = [SlideElement.model_validate(e) for e in args["elements"]]
     slide = Slide(
         id=args["id"],
         layout=args["layout"],
-        elements=[SlideElement(**e) for e in args["elements"]],
+        elements=elements,
         notes=args.get("notes", ""),
     )
     if any(s.id == slide.id for s in presentation.slides):
@@ -146,7 +190,7 @@ def _execute_edit_slide(args: dict, presentation: Presentation) -> str:
     for slide in presentation.slides:
         if slide.id == target_id:
             if args.get("elements") is not None:
-                slide.elements = [SlideElement(**e) for e in args["elements"]]
+                slide.elements = [SlideElement.model_validate(e) for e in args["elements"]]
             if args.get("layout") is not None:
                 slide.layout = args["layout"]
             if args.get("notes") is not None:
@@ -163,6 +207,68 @@ def _execute_delete_slide(args: dict, presentation: Presentation) -> str:
             presentation.slides.pop(i)
             return f"Deleted slide '{target_id}'."
     return f"Error: Slide '{target_id}' not found."
+
+
+def _execute_edit_element(args: dict, presentation: Presentation) -> str:
+    """Edit a single element within a slide using patch semantics."""
+    slide_id = args["slide_id"]
+    element_id = args["element_id"]
+    for slide in presentation.slides:
+        if slide.id == slide_id:
+            for element in slide.elements:
+                if element.id == element_id:
+                    if args.get("content") is not None:
+                        element.content = args["content"]
+                    if args.get("table_data") is not None:
+                        element.table_data = args["table_data"]
+                    if args.get("type") is not None:
+                        element.type = args["type"]
+                    if args.get("metadata") is not None:
+                        existing_meta = element.metadata.model_dump(exclude_none=True) if element.metadata else {}
+                        new_meta = args["metadata"] if isinstance(args["metadata"], dict) else args["metadata"]
+                        merged = {**existing_meta, **new_meta}
+                        # Re-validate through the union so the merged dict becomes the right typed model
+                        element.metadata = SlideElement.model_validate(
+                            {"id": element.id, "type": element.type, "metadata": merged},
+                        ).metadata
+                    if args.get("style") is not None:
+                        existing = element.style.model_dump(exclude_none=True) if element.style else {}
+                        merged = {**existing, **args["style"]}
+                        element.style = ElementStyle.model_validate(merged)
+                    return f"Updated element '{element_id}' in slide '{slide_id}'."
+            return f"Error: Element '{element_id}' not found in slide '{slide_id}'."
+    return f"Error: Slide '{slide_id}' not found."
+
+
+def _execute_add_element(args: dict, presentation: Presentation) -> str:
+    """Add a new element to an existing slide."""
+    slide_id = args["slide_id"]
+    for slide in presentation.slides:
+        if slide.id == slide_id:
+            new_element = SlideElement.model_validate(args["element"])
+            if any(e.id == new_element.id for e in slide.elements):
+                return f"Error: Element with id '{new_element.id}' already exists in slide '{slide_id}'."
+            position = args.get("position")
+            if position is not None:
+                slide.elements.insert(position, new_element)
+            else:
+                slide.elements.append(new_element)
+            return f"Added element '{new_element.id}' to slide '{slide_id}'."
+    return f"Error: Slide '{slide_id}' not found."
+
+
+def _execute_remove_element(args: dict, presentation: Presentation) -> str:
+    """Remove a single element from a slide."""
+    slide_id = args["slide_id"]
+    element_id = args["element_id"]
+    for slide in presentation.slides:
+        if slide.id == slide_id:
+            for i, element in enumerate(slide.elements):
+                if element.id == element_id:
+                    slide.elements.pop(i)
+                    return f"Removed element '{element_id}' from slide '{slide_id}'."
+            return f"Error: Element '{element_id}' not found in slide '{slide_id}'."
+    return f"Error: Slide '{slide_id}' not found."
 
 
 def _execute_reorder_slides(args: dict, presentation: Presentation) -> str:
@@ -182,6 +288,9 @@ def _execute_reorder_slides(args: dict, presentation: Presentation) -> str:
 _SLIDE_EXECUTORS: dict[str, Callable[[dict, Presentation], str]] = {
     "CreateSlide": _execute_create_slide,
     "EditSlide": _execute_edit_slide,
+    "EditElement": _execute_edit_element,
+    "AddElement": _execute_add_element,
+    "RemoveElement": _execute_remove_element,
     "DeleteSlide": _execute_delete_slide,
     "ReorderSlides": _execute_reorder_slides,
 }

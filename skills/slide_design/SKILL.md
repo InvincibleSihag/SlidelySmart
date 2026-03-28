@@ -18,7 +18,7 @@ Available layout types:
 
 ## Slide Elements
 
-Each slide contains elements. Each element has a `type` and `content`:
+Each slide contains elements. Every element must have an `id`, `type`, and `content`:
 
 - `title` — Main title text (content: string)
 - `subtitle` — Subtitle text (content: string)
@@ -29,8 +29,26 @@ Each slide contains elements. Each element has a `type` and `content`:
 - `image` — Image placeholder (content: description string, metadata: {"url": "...", "alt": "..."})
 - `quote` — Block quote (content: string)
 - `code` — Code block (content: string, metadata: {"language": "python"})
-- `table` — Table data (content: list of lists — first row is header)
+- `table` — Table data (table_data: list of lists — first row is header)
 - `notes` — Speaker notes (content: string)
+
+## Element ID Convention
+
+Every element must have a unique `id` within its slide. Use the pattern `el-{n}`:
+- `el-1`, `el-2`, `el-3`, etc.
+- IDs must be unique within the slide (not across slides)
+
+## Rich Text
+
+All text content supports inline markdown:
+- `**bold**`, `*italic*`, `` `code` ``, `[link](url)`
+- Use naturally in titles, headings, bullets, text, quotes, and table cells
+
+## Element Styling
+
+Any element can have an optional `style` object with visual overrides:
+- `font_size`, `font_weight`, `font_style`, `color`, `text_align`, `background_color`, `opacity`
+- Use sparingly for emphasis — don't style every element
 
 ## Design Best Practices
 
@@ -41,6 +59,15 @@ Each slide contains elements. Each element has a `type` and `content`:
 - Include a clear title slide and closing slide
 - Use section headers to break up major topics
 - Use images and quotes to add visual interest
+- Use **bold** and *italic* to highlight key phrases in text
+- Use element `style` for emphasis on key metrics or headings, not for every element
+
+## Two-Column Layout
+
+For `two_column` layout, use `metadata.column` to assign elements to columns:
+- Elements without column metadata → rendered in the left column
+- Elements with `"metadata": {"column": "right"}` → rendered in the right column
+- The heading element renders above both columns
 
 ## Layout Selection Guide
 

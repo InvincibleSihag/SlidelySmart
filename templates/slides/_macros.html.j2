@@ -1,0 +1,74 @@
+{#- Shared element rendering macros used by all layout templates. -#}
+
+{% macro el_attrs(element) %}data-element-id="{{ element.id }}"{% endmacro %}
+
+{% macro slide_bg(slide) %}{% if slide.background %} style="background: {{ slide.background }}"{% endif %}{% endmacro %}
+
+{% macro element_style(element) -%}
+  {% if element.style -%}
+    style="
+    {%- if element.style.font_size %}font-size: {{ element.style.font_size }};{% endif %}
+    {%- if element.style.font_weight %}font-weight: {{ element.style.font_weight }};{% endif %}
+    {%- if element.style.font_style %}font-style: {{ element.style.font_style }};{% endif %}
+    {%- if element.style.color %}color: {{ element.style.color }};{% endif %}
+    {%- if element.style.text_align %}text-align: {{ element.style.text_align }};{% endif %}
+    {%- if element.style.background_color %}background-color: {{ element.style.background_color }};{% endif %}
+    {%- if element.style.opacity is not none %}opacity: {{ element.style.opacity }};{% endif %}
+    "
+  {%- endif %}
+{%- endmacro %}
+
+{#- Flat bullet list rendering -#}
+{% macro render_bullet_items(items) %}
+  {% for item in items %}
+    <li>{{ item | rich_text }}</li>
+  {% endfor %}
+{% endmacro %}
+
+{% macro render_element(element) %}
+  {% if element.type == "title" %}
+    <h1 class="slide-main-title" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h1>
+  {% elif element.type == "heading" %}
+    <h2 class="slide-heading" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
+  {% elif element.type == "subtitle" %}
+    <p class="slide-subtitle" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</p>
+  {% elif element.type == "text" %}
+    <p class="slide-text" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</p>
+  {% elif element.type == "bullets" %}
+    <ul class="slide-bullets" {{ el_attrs(element) }} {{ element_style(element) }}>
+      {% if element.content is iterable and element.content is not string %}
+        {{ render_bullet_items(element.content) }}
+      {% endif %}
+    </ul>
+  {% elif element.type == "numbered_list" %}
+    <ol class="slide-numbered" {{ el_attrs(element) }} {{ element_style(element) }}>
+      {% if element.content is iterable and element.content is not string %}
+        {% for item in element.content %}
+          <li>{{ item | rich_text }}</li>
+        {% endfor %}
+      {% endif %}
+    </ol>
+  {% elif element.type == "quote" %}
+    <blockquote class="slide-quote" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</blockquote>
+  {% elif element.type == "code" %}
+    <pre class="slide-code" {{ el_attrs(element) }} {{ element_style(element) }}><code {% if element.metadata and element.metadata.language %}class="language-{{ element.metadata.language }}"{% endif %}>{{ element.content }}</code></pre>
+  {% elif element.type == "image" %}
+    <div class="slide-image" {{ el_attrs(element) }} {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
+      <span class="image-placeholder">{{ element.content }}</span>
+    </div>
+  {% elif element.type == "table" %}
+    <table class="slide-table" {{ el_attrs(element) }} {{ element_style(element) }}>
+      {% if element.table_data is iterable and element.table_data is not string %}
+        {% for row in element.table_data %}
+          {% if loop.first %}
+            <thead><tr>{% for cell in row %}<th>{{ cell | rich_text }}</th>{% endfor %}</tr></thead>
+            <tbody>
+          {% else %}
+            <tr>{% for cell in row %}<td>{{ cell | rich_text }}</td>{% endfor %}</tr>
+          {% endif %}
+        {% endfor %}
+        </tbody>
+      {% endif %}
+    </table>
+  {% endif %}
+{% endmacro %}
