@@ -1,0 +1,9 @@
+<div class="slide slide-section-header" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+  {% for element in slide.elements %}
+    {% if element.type in ("title", "heading") %}
+      <h2 class="section-title">{{ element.content }}</h2>
+    {% elif element.type in ("subtitle", "text") %}
+      <p class="section-subtitle">{{ element.content }}</p>
+    {% endif %}
+  {% endfor %}
+</div>

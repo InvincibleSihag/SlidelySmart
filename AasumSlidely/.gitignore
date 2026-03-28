@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.tsbuildinfo
+
+# orval generated files (regenerated from schema)
+src/api/

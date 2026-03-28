@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ENV_FILE="$REPO_ROOT/.env"
+ENV_LOCAL_FILE="$REPO_ROOT/.local.env"
+LOCAL_IMAGE="slidely-backend:local"
+LOCAL_CONTAINER_NAME="slidely-backend-local"
+WORKER_CONTAINER_NAME="slidely-celery-worker"
+REDIS_CONTAINER_NAME="slidely-redis"
+DB_CONTAINER_NAME="slidely-db"
+LOCAL_PORT_DEFAULT="9753"
+NGROK_DOMAIN_DEFAULT=""
+
+usage() {
+  echo "Usage: $0 <command>" >&2
+  echo "Commands: run-local      Build & run backend + worker + infra locally, start ngrok" >&2
+  echo "         run-docker     Alias for run-local" >&2
+  echo "         stop           Stop all local containers" >&2
+  exit 1
+}
+
+# --- Parse .local.env for docker env vars (exclude GOOGLE_APPLICATION_CREDENTIALS; handled via mount) ---
+env_vars_for_docker() {
+  local line key val
+  [[ -f "$ENV_LOCAL_FILE" ]] || { echo "Missing $ENV_LOCAL_FILE"; exit 1; }
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" ]] && continue
+    if [[ "$line" == *=* ]]; then
+      key="${line%%=*}"
+      key="${key%"${key##*[![:space:]]}"}"
+      val="${line#*=}"
+      val="${val#\"}"; val="${val%\"}"
+      [[ "$key" == "GOOGLE_APPLICATION_CREDENTIALS" ]] && continue
+      printf '%s=%s\n' "$key" "$val"
+    fi
+  done < "$ENV_LOCAL_FILE"
+}
+
+# --- Get a single value from .local.env ---
+get_env_val_local() {
+  local key="$1"
+  local line k val
+  [[ -f "$ENV_LOCAL_FILE" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" ]] && continue
+    if [[ "$line" == *=* ]]; then
+      k="${line%%=*}"
+      k="${k%"${k##*[![:space:]]}"}"
+      [[ "$k" != "$key" ]] && continue
+      val="${line#*=}"
+      val="${val#\"}"; val="${val%\"}"
+      printf '%s' "$val"
+      return 0
+    fi
+  done < "$ENV_LOCAL_FILE"
+  return 1
+}
+
+require_command() {
+  local cmd="$1"
+  command -v "$cmd" >/dev/null 2>&1 || {
+    echo "Missing required command: $cmd" >&2
+    exit 1
+  }
+}
+
+get_local_port() {
+  local configured_port
+  configured_port="$(get_env_val_local "PORT" 2>/dev/null || true)"
+  if [[ -n "$configured_port" ]]; then
+    if [[ "$configured_port" =~ ^[0-9]+$ ]] && ((configured_port >= 1 && configured_port <= 65535)); then
+      printf '%s' "$configured_port"
+      return 0
+    fi
+    echo "Invalid PORT in $ENV_LOCAL_FILE: $configured_port" >&2
+    exit 1
+  fi
+
+  printf '%s' "$LOCAL_PORT_DEFAULT"
+}
+
+get_ngrok_domain() {
+  local ngrok_domain e2e_base_url
+  ngrok_domain="$(get_env_val_local "NGROK_DOMAIN" 2>/dev/null || true)"
+  if [[ -n "$ngrok_domain" ]]; then
+    ngrok_domain="${ngrok_domain#http://}"
+    ngrok_domain="${ngrok_domain#https://}"
+    ngrok_domain="${ngrok_domain%%/*}"
+    if [[ -n "$ngrok_domain" ]]; then
+      printf '%s' "$ngrok_domain"
+      return 0
+    fi
+  fi
+
+  e2e_base_url="$(get_env_val_local "E2E_BASE_URL" 2>/dev/null || true)"
+  if [[ -n "$e2e_base_url" ]]; then
+    e2e_base_url="${e2e_base_url#http://}"
+    e2e_base_url="${e2e_base_url#https://}"
+    e2e_base_url="${e2e_base_url%%/*}"
+    if [[ -n "$e2e_base_url" ]]; then
+      printf '%s' "$e2e_base_url"
+      return 0
+    fi
+  fi
+
+  if [[ -n "$NGROK_DOMAIN_DEFAULT" ]]; then
+    printf '%s' "$NGROK_DOMAIN_DEFAULT"
+  fi
+}
+
+cleanup_all_containers() {
+  docker rm -f "$LOCAL_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$WORKER_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker network rm slidely-net >/dev/null 2>&1 || true
+}
+
+stop_all() {
+  echo "Stopping all Slidely containers..."
+  cleanup_all_containers
+  echo "Done."
+}
+
+start_ngrok_in_new_terminal() {
+  local ngrok_domain="$1"
+  local port="$2"
+  local terminal_cmd escaped_cmd
+
+  if [[ -n "$ngrok_domain" ]]; then
+    terminal_cmd="cd \"$REPO_ROOT\"; echo \"Starting ngrok for https://$ngrok_domain\"; ngrok http --url=\"$ngrok_domain\" \"$port\""
+  else
+    terminal_cmd="cd \"$REPO_ROOT\"; echo \"Starting ngrok on random domain\"; ngrok http \"$port\""
+  fi
+  escaped_cmd="${terminal_cmd//\\/\\\\}"
+  escaped_cmd="${escaped_cmd//\"/\\\"}"
+
+  osascript -e "tell application \"Terminal\" to do script \"$escaped_cmd\"" >/dev/null
+}
+
+wait_for_local_backend() {
+  local port="$1"
+  local max_attempts=60
+  local attempt
+
+  for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+    if curl --silent --output /dev/null "http://127.0.0.1:$port"; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  return 1
+}
+
+wait_for_service() {
+  local host="$1"
+  local port="$2"
+  local name="$3"
+  local max_attempts=30
+  local attempt
+
+  for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+    if docker exec "$host" sh -c "echo > /dev/tcp/localhost/$port" 2>/dev/null || \
+       nc -z 127.0.0.1 "$port" 2>/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "$name did not start within ${max_attempts}s" >&2
+  return 1
+}
+
+run_docker() {
+  [[ -f "$ENV_LOCAL_FILE" ]] || { echo "Missing $ENV_LOCAL_FILE — copy .env.example to .local.env and configure it."; exit 1; }
+  require_command docker
+  require_command curl
+  require_command ngrok
+  require_command osascript
+
+  local -a run_args=()
+  local line
+  local local_port ngrok_domain
+  local_port="$(get_local_port)"
+  ngrok_domain="$(get_ngrok_domain)"
+
+  # --- 1. Create a Docker network for service discovery ---
+  docker network create slidely-net >/dev/null 2>&1 || true
+
+  # --- 2. Start PostgreSQL ---
+  echo "Starting PostgreSQL..."
+  docker rm -f "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker run -d --rm \
+    --name "$DB_CONTAINER_NAME" \
+    --network slidely-net \
+    -e POSTGRES_DB=slidely \
+    -e POSTGRES_USER=slidely \
+    -e POSTGRES_PASSWORD=slidely \
+    -p 5432:5432 \
+    postgres:16-alpine >/dev/null
+
+  # --- 3. Start Redis ---
+  echo "Starting Redis..."
+  docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker run -d --rm \
+    --name "$REDIS_CONTAINER_NAME" \
+    --network slidely-net \
+    -p 6379:6379 \
+    redis:7-alpine >/dev/null
+
+  # Wait for DB to be ready
+  echo "Waiting for PostgreSQL..."
+  for i in $(seq 1 30); do
+    if docker exec "$DB_CONTAINER_NAME" pg_isready -U slidely >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+
+  # --- 4. Build local image ---
+  echo "Building local image..."
+  (cd "$REPO_ROOT" && docker build -t "$LOCAL_IMAGE" .)
+
+  # --- 5. Collect env vars for containers ---
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" ]] && continue
+    run_args+=(-e "$line")
+  done < <(env_vars_for_docker)
+  run_args+=(-e "PORT=$local_port")
+  # Override DB and Redis URLs for Docker network
+  run_args+=(-e "DATABASE_URL=postgresql://slidely:slidely@${DB_CONTAINER_NAME}:5432/slidely")
+  run_args+=(-e "CELERY_BROKER_URL=redis://${REDIS_CONTAINER_NAME}:6379/0")
+  run_args+=(-e "CELERY_RESULT_BACKEND=redis://${REDIS_CONTAINER_NAME}:6379/0")
+
+  # Mount GCP key file into container if configured
+  local creds_path
+  creds_path="$(get_env_val_local "GOOGLE_APPLICATION_CREDENTIALS" 2>/dev/null)" || true
+  if [[ -n "$creds_path" ]]; then
+    [[ "$creds_path" != /* ]] && creds_path="$REPO_ROOT/$creds_path"
+    if [[ -f "$creds_path" ]]; then
+      run_args+=(-v "${creds_path}:/tmp/gcp-creds.json:ro" -e "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-creds.json")
+    fi
+  fi
+
+  # Mount app source for live reload
+  local -a mount_args=(
+    -v "$REPO_ROOT/app:/app/app"
+    -v "$REPO_ROOT/alembic:/app/alembic"
+    -v "$REPO_ROOT/alembic.ini:/app/alembic.ini"
+    -v "$REPO_ROOT/prompts:/app/prompts"
+    -v "$REPO_ROOT/templates:/app/templates"
+  )
+
+  # --- 6. Start Celery worker ---
+  echo "Starting Celery worker..."
+  docker rm -f "$WORKER_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker run -dt --rm \
+    --name "$WORKER_CONTAINER_NAME" \
+    --network slidely-net \
+    "${run_args[@]}" \
+    "${mount_args[@]}" \
+    "$LOCAL_IMAGE" \
+    sh -c "celery -A app.services.celery_app worker --loglevel=info" >/dev/null
+
+  # --- 7. Start FastAPI backend ---
+  echo "Starting backend: http://localhost:$local_port"
+  docker rm -f "$LOCAL_CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker run -dt --rm \
+    --name "$LOCAL_CONTAINER_NAME" \
+    --network slidely-net \
+    -p "$local_port:$local_port" \
+    "${run_args[@]}" \
+    "${mount_args[@]}" \
+    "$LOCAL_IMAGE" \
+    sh -c "exec uvicorn app.main:app --host 0.0.0.0 --port \${PORT:-$local_port} --reload --log-level info" >/dev/null
+
+  trap cleanup_all_containers EXIT INT TERM
+
+  if ! wait_for_local_backend "$local_port"; then
+    echo "Backend did not become ready on port $local_port."
+    docker logs "$LOCAL_CONTAINER_NAME" || true
+    exit 1
+  fi
+
+  echo "Backend is live."
+  if [[ -n "$ngrok_domain" ]]; then
+    start_ngrok_in_new_terminal "$ngrok_domain" "$local_port"
+    echo "ngrok is launching in a separate Terminal for https://$ngrok_domain"
+  else
+    start_ngrok_in_new_terminal "" "$local_port"
+    echo "ngrok is launching in a separate Terminal (random domain)"
+  fi
+  echo "Streaming backend logs. Stop with Ctrl+C."
+
+  docker logs -f "$LOCAL_CONTAINER_NAME"
+}
+
+case "${1:-}" in
+  run-docker)     run_docker ;;
+  run-local)      run_docker ;;
+  stop)           stop_all ;;
+  *)              usage ;;
+esac

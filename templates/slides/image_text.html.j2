@@ -1,0 +1,43 @@
+<div class="slide slide-image-text" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+  {% for element in slide.elements %}
+    {% if element.type in ("heading", "title") %}
+      <h2 class="slide-heading">{{ element.content }}</h2>
+    {% endif %}
+  {% endfor %}
+  <div class="image-text-layout">
+    <div class="image-side">
+      {% for element in slide.elements %}
+        {% if element.type == "image" %}
+          <div class="slide-image" {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
+            <span class="image-placeholder">{{ element.content }}</span>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="text-side">
+      {% for element in slide.elements %}
+        {% if element.type == "text" %}
+          <p class="slide-text">{{ element.content }}</p>
+        {% elif element.type == "bullets" %}
+          <ul class="slide-bullets">
+            {% if element.content is iterable and element.content is not string %}
+              {% for item in element.content %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            {% endif %}
+          </ul>
+        {% elif element.type == "numbered_list" %}
+          <ol class="slide-numbered">
+            {% if element.content is iterable and element.content is not string %}
+              {% for item in element.content %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            {% endif %}
+          </ol>
+        {% elif element.type == "quote" %}
+          <blockquote class="slide-quote">{{ element.content }}</blockquote>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>

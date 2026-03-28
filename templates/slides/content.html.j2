@@ -1,0 +1,49 @@
+<div class="slide slide-content" data-slide-id="{{ slide.id }}" {% if slide.background %}style="background: {{ slide.background }}"{% endif %}>
+  {% for element in slide.elements %}
+    {% if element.type == "heading" %}
+      <h2 class="slide-heading">{{ element.content }}</h2>
+    {% elif element.type == "title" %}
+      <h2 class="slide-heading">{{ element.content }}</h2>
+    {% elif element.type == "text" %}
+      <p class="slide-text">{{ element.content }}</p>
+    {% elif element.type == "bullets" %}
+      <ul class="slide-bullets">
+        {% if element.content is iterable and element.content is not string %}
+          {% for item in element.content %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        {% endif %}
+      </ul>
+    {% elif element.type == "numbered_list" %}
+      <ol class="slide-numbered">
+        {% if element.content is iterable and element.content is not string %}
+          {% for item in element.content %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        {% endif %}
+      </ol>
+    {% elif element.type == "quote" %}
+      <blockquote class="slide-quote">{{ element.content }}</blockquote>
+    {% elif element.type == "code" %}
+      <pre class="slide-code"><code {% if element.metadata and element.metadata.language %}class="language-{{ element.metadata.language }}"{% endif %}>{{ element.content }}</code></pre>
+    {% elif element.type == "image" %}
+      <div class="slide-image" {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
+        <span class="image-placeholder">{{ element.content }}</span>
+      </div>
+    {% elif element.type == "table" %}
+      <table class="slide-table">
+        {% if element.content is iterable and element.content is not string %}
+          {% for row in element.content %}
+            {% if loop.first %}
+              <thead><tr>{% for cell in row %}<th>{{ cell }}</th>{% endfor %}</tr></thead>
+              <tbody>
+            {% else %}
+              <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+            {% endif %}
+          {% endfor %}
+          </tbody>
+        {% endif %}
+      </table>
+    {% endif %}
+  {% endfor %}
+</div>

@@ -1,0 +1,41 @@
+services:
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+  worker:
+    build: .
+    command: celery -A app.services.celery_app worker --loglevel=info
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: slidely
+      POSTGRES_USER: slidely
+      POSTGRES_PASSWORD: slidely
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

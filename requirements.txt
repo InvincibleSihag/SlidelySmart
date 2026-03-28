@@ -1,0 +1,20 @@
+fastapi>=0.129.0
+uvicorn[standard]>=0.40.0
+sqlmodel>=0.0.33
+psycopg2-binary>=2.9.11
+pusher>=3.3.3
+google-cloud-storage>=3.9.0
+pydantic-settings>=2.12.0
+structlog>=24.4.0
+jinja2>=3.1.0
+google-auth>=2.48.0
+httpx>=0.28.1
+alembic>=1.18.4
+celery[redis]>=5.4.0
+redis>=5.0.0
+# LangGraph Agent
+langgraph>=0.4.0
+langchain-core>=0.3.0
+langchain-google-genai>=2.1.0
+langgraph-checkpoint-postgres>=2.0.0
+psycopg[binary,pool]>=3.2.0

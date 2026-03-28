@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/sihagsawan/Desktop/SlidelyAssignment -maxdepth 3 -type d ! -path */venv* ! -path */.git* ! -path */__pycache__*)",
+      "Bash(npm --version)",
+      "Bash(npx --version)"
+    ]
+  }
+}
