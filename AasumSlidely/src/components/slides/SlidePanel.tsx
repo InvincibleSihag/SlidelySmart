@@ -7,7 +7,6 @@ const CANVAS_H = 540;
 interface SlidePanelProps {
   slidesHtml: string | null;
   isGenerating: boolean;
-  slideCount: number;
 }
 
 function parseSlides(html: string): { styles: string; slides: string[] } {
@@ -56,7 +55,7 @@ function SlideCard({ srcDoc, index }: { srcDoc: string; index: number }) {
         background: "#fff",
         border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: 12,
-        marginBottom: 24,
+        marginBottom: 0,
         overflow: "hidden",
         // Height scales proportionally to maintain 16:9
         aspectRatio: "16 / 9",
@@ -81,7 +80,7 @@ function SlideCard({ srcDoc, index }: { srcDoc: string; index: number }) {
   );
 }
 
-export const SlidePanel = memo(function SlidePanel({ slidesHtml, isGenerating, slideCount }: SlidePanelProps) {
+export const SlidePanel = memo(function SlidePanel({ slidesHtml, isGenerating }: SlidePanelProps) {
   const { styles, slides } = useMemo(
     () => (slidesHtml ? parseSlides(slidesHtml) : { styles: "", slides: [] }),
     [slidesHtml],
@@ -97,7 +96,7 @@ export const SlidePanel = memo(function SlidePanel({ slidesHtml, isGenerating, s
       flex: 1, background: "#fff", display: "flex",
       flexDirection: "column", height: "100%",
     }}>
-      <SlidePanelHeader isGenerating={isGenerating} slideCount={slideCount} />
+      <SlidePanelHeader isGenerating={isGenerating} />
 
       <div className="slide-scroll" style={{
         flex: 1, overflowY: "auto", padding: "20px 24px",
@@ -105,7 +104,20 @@ export const SlidePanel = memo(function SlidePanel({ slidesHtml, isGenerating, s
       }}>
         {slides.length > 0 ? (
           slides.map((_, index) => (
-            <SlideCard key={index} srcDoc={slideSrcDocs[index]} index={index} />
+            <div key={index} style={{ marginBottom: 24 }}>
+              <SlideCard srcDoc={slideSrcDocs[index]} index={index} />
+              <div style={{
+                textAlign: "center",
+                paddingTop: 10,
+                fontSize: 12,
+                fontWeight: 500,
+                color: "rgba(0,0,0,0.3)",
+                fontFamily: "'DM Sans', sans-serif",
+                letterSpacing: "0.01em",
+              }}>
+                {index + 1}/{slides.length}
+              </div>
+            </div>
           ))
         ) : isGenerating ? (
           <div style={{ textAlign: "center", padding: "20px 0", animation: "fadeUp 0.4s ease forwards" }}>

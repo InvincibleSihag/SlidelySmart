@@ -57,15 +57,17 @@
   {% elif element.type == "quote" %}
     <blockquote class="slide-quote" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</blockquote>
   {% elif element.type == "code" %}
-    <pre class="slide-code" {{ el_attrs(element) }} {{ element_style(element) }}><code {% if element.metadata and element.metadata.language %}class="language-{{ element.metadata.language }}"{% endif %}>{{ element.content }}</code></pre>
+    {% set code_content = element.content | first if element.content is sequence and element.content is not string else element.content %}
+    <pre class="slide-code" {{ el_attrs(element) }} {{ element_style(element) }}><code {% if element.metadata and element.metadata.language %}class="language-{{ element.metadata.language }}"{% endif %}>{{ code_content }}</code></pre>
   {% elif element.type == "image" %}
-    {% if element.content and element.content.startswith("http") %}
+    {% set img_url = element.content | first if element.content is sequence and element.content is not string else element.content %}
+    {% if img_url and img_url is string and img_url.startswith("http") %}
     <div class="slide-image" {{ el_attrs(element) }} {{ element_style(element) }}>
-      <img src="{{ element.content }}" alt="{{ element.metadata.alt if element.metadata and element.metadata.alt else '' }}" />
+      <img src="{{ img_url }}" alt="{{ element.metadata.alt if element.metadata and element.metadata.alt else '' }}" />
     </div>
     {% else %}
     <div class="slide-image" {{ el_attrs(element) }} {{ element_style(element) }}>
-      <span class="image-placeholder">{{ element.content or 'Image' }}</span>
+      <span class="image-placeholder">{{ img_url or 'Image' }}</span>
     </div>
     {% endif %}
   {% elif element.type == "table" %}

@@ -1,32 +1,48 @@
 /* ============================================================
-   Default Theme — Clean professional light
-   White background, dark text, blue accent
+   Default Theme — Corporate Navy
+   Navy blue accents, soft blue-gray backgrounds, professional
    ============================================================ */
 
 .slide {
-  --slide-bg: #ffffff;
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a5568;
-  --text-muted: #a0aec0;
-  --accent: #2563eb;
-  --accent-light: #eff6ff;
-  --accent-dark: #1d4ed8;
-  --border-color: rgba(0, 0, 0, 0.06);
-  --code-bg: #f7fafc;
-  --code-border: #e2e8f0;
-  --quote-border: #2563eb;
-  --table-header-bg: #f7fafc;
-  --table-border: #e2e8f0;
+  --slide-bg: #f8f9fc;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent: #1e3a6e;
+  --accent-light: #e8edf5;
+  --accent-dark: #152c54;
+  --border-color: rgba(30, 58, 110, 0.1);
+  --code-bg: #f1f4f9;
+  --code-border: #d5dce8;
+  --quote-border: #1e3a6e;
+  --table-header-bg: #e8edf5;
+  --table-border: #d5dce8;
   --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Default theme: subtle gradient on title slides */
+/* Corporate gradient on title slides */
 .slide-title {
-  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  background: linear-gradient(170deg, #f8f9fc 0%, #e8edf5 100%);
+}
+.slide-title::before {
+  background: linear-gradient(90deg, #1e3a6e, #2d5299);
 }
 
-/* Default theme: gradient on section headers */
+/* Subtle navy tint on section headers */
 .slide-section-header {
-  background: linear-gradient(180deg, #ffffff 0%, var(--accent-light) 100%);
+  background: linear-gradient(180deg, #f8f9fc 0%, #e8edf5 100%);
+}
+.slide-section-header .section-title::after {
+  background: #1e3a6e;
+}
+
+/* Heading left-border in navy */
+.slide .slide-heading {
+  border-left-color: #1e3a6e;
+}
+
+/* Table header styling */
+.slide .slide-table th {
+  color: #1e3a6e;
 }

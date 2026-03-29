@@ -72,9 +72,7 @@ export function ChatInput({ input, onInputChange, onSend, onKeyDown, disabled, i
           borderRadius: 20,
           padding: "6px 6px 6px 20px",
           border: `1px solid ${isFocused && !disabled ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.06)"}`,
-          boxShadow: isFocused && !disabled
-            ? "0 0 0 3px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.04)"
-            : "0 1px 3px rgba(0,0,0,0.02)",
+          boxShadow: "none",
           transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >

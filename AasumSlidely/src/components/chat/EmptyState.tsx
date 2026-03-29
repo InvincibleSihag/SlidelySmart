@@ -3,9 +3,9 @@ interface EmptyStateProps {
 }
 
 const SUGGESTIONS = [
-  "Pitch deck for a AI startup",
-  "Quarterly review",
-  "Design philosophy talk",
+  "Pitch deck for a Slidely AI Company",
+  "Humanity space exploration till 2035",
+  "Effect of Deforestation on Climate Chnage",
 ];
 
 export function EmptyState({ onSuggestionClick }: EmptyStateProps) {

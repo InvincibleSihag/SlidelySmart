@@ -5,7 +5,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ slideCount }: ChatHeaderProps) {
   return (
     <div style={{
-      padding: "20px 28px",
+      height: 64, padding: "0 24px", boxSizing: "border-box" as const,
       display: "flex", alignItems: "center", justifyContent: "space-between",
       borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0,
     }}>

@@ -86,7 +86,15 @@ class EditElement(BaseModel):
 
     slide_id: str = Field(..., description="ID of the slide containing the element")
     element_id: str = Field(..., description="ID of the element to edit")
-    content: str | list[str] | None = Field(default=None, description="New content (replaces existing)")
+    content: str | list[str] | None = Field(
+        default=None,
+        description=(
+            "New content (replaces existing). "
+            "Plain string for title, subtitle, heading, text, quote, code, image, and notes elements. "
+            "For image elements: a single URL string (from SearchImage), NOT a list. "
+            "list[str] ONLY for bullets and numbered_list."
+        ),
+    )
     table_data: list[list[str]] | None = Field(default=None, description="2D array for table elements. First row is the header row.")
     metadata: ElementMetadata | None = Field(default=None, description="Metadata updates (shallow-merged with existing)")
     type: ElementType | None = Field(default=None, description="New element type")
@@ -115,9 +123,9 @@ class SetTheme(BaseModel):
     """Set the presentation's visual theme and optionally inject custom CSS.
 
     Available themes:
-    - 'default': Clean, professional light theme with blue accents on white
-    - 'dark': Dark background with light text and cyan accents
-    - 'modern': Contemporary style with purple accents and subtle gradients
+    - 'default': Corporate navy blue (#1e3a6e) on soft blue-gray backgrounds, professional and authoritative
+    - 'dark': Pure black background with white text, minimal borders, strictly black & white — no color accents
+    - 'modern': Contemporary style with emerald-green (#059669) gradient accents on warm neutrals
 
     Call this before creating slides to set the overall look, or call it
     later to change the theme retroactively (all slides update).

@@ -146,7 +146,7 @@ class Presentation(BaseModel):
     title: str = ""
     theme: ThemeType = Field(
         default="default",
-        description="Visual theme: 'default' (light professional), 'dark' (dark mode), 'modern' (bold contemporary)",
+        description="Visual theme: 'default' (corporate navy), 'dark' (black & white minimalist), 'modern' (green contemporary)",
     )
     custom_css: str | None = Field(
         default=None,

@@ -1,51 +1,97 @@
 /* ============================================================
-   Dark Theme — Sophisticated night
-   Slate background, light text, sky-blue accent
+   Dark Theme — Black & White Minimalist
+   Pure black background, white text, no color accents
    ============================================================ */
 
 .slide {
-  --slide-bg: #0f172a;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent: #38bdf8;
-  --accent-light: rgba(56, 189, 248, 0.08);
-  --accent-dark: #0ea5e9;
-  --border-color: rgba(255, 255, 255, 0.06);
-  --code-bg: #1e293b;
-  --code-border: #334155;
-  --quote-border: #38bdf8;
-  --table-header-bg: rgba(56, 189, 248, 0.06);
-  --table-border: #1e293b;
+  --slide-bg: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #707070;
+  --accent: #ffffff;
+  --accent-light: rgba(255, 255, 255, 0.06);
+  --accent-dark: #d4d4d4;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --code-bg: #0a0a0a;
+  --code-border: #262626;
+  --quote-border: #ffffff;
+  --table-header-bg: rgba(255, 255, 255, 0.04);
+  --table-border: #262626;
   --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Dark theme: gradient title slide */
+/* Title slide: pure black with thin white top border */
 .slide-title {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: #000000;
 }
 .slide-title::before {
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  background: #ffffff;
+  height: 2px;
 }
 
-/* Dark theme: section header glow */
+/* Section header: no background effects, just black */
 .slide-section-header {
-  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+  background: #000000;
+}
+.slide-section-header .section-title::after {
+  background: #ffffff;
+  width: 40px;
+  height: 2px;
 }
 
-/* Dark theme: image placeholder */
-.slide .image-placeholder {
-  background: rgba(56, 189, 248, 0.04);
+/* Minimal heading border */
+.slide .slide-heading {
+  border-left-color: #ffffff;
+  border-left-width: 2px;
 }
 
-/* Dark theme: code blocks with stronger distinction */
+/* Subtle code blocks */
 .slide .slide-code {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-color: #475569;
+  border-color: #262626;
+  box-shadow: none;
 }
 
-/* Dark theme: table row striping */
+/* Quote: thin white border, no background tint */
+.slide .slide-quote {
+  border-left-width: 3px;
+  background: transparent;
+}
+
+/* Table: minimal lines */
+.slide .slide-table th {
+  color: #ffffff;
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: 1px solid #404040;
+}
+.slide .slide-table td {
+  border-bottom: 1px solid #1a1a1a;
+}
 .slide .slide-table tbody tr:nth-child(even) {
-  background: rgba(56, 189, 248, 0.04);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Bullet dots in white */
+.slide .slide-bullets li::before {
+  background: #ffffff;
+  width: 6px;
+  height: 6px;
+}
+
+/* Numbered list markers */
+.slide .slide-numbered li::marker {
+  color: #ffffff;
+}
+
+/* Image placeholder */
+.slide .image-placeholder {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #262626;
+}
+
+/* Links: white with underline for visibility */
+.slide a {
+  color: #ffffff;
+  text-decoration: underline;
 }

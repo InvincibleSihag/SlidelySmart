@@ -133,7 +133,6 @@ export function SlideAgent() {
         <SlidePanel
           slidesHtml={slidesHtml}
           isGenerating={isGenerating}
-          slideCount={slideCount}
         />
       )}
     </div>
