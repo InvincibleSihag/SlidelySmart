@@ -11,9 +11,9 @@ PID_DIR="$REPO_ROOT/.cli"
 mkdir -p "$PID_DIR"
 
 R='\033[1;31m' G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' C='\033[1;36m' NC='\033[0m'
-log()  { printf "${G}[slidely]${NC} %s\n" "$*"; }
-warn() { printf "${Y}[slidely]${NC} %s\n" "$*"; }
-err()  { printf "${R}[slidely]${NC} %s\n" "$*" >&2; }
+log()  { printf "${G}[slidely]${NC} %b\n" "$*"; }
+warn() { printf "${Y}[slidely]${NC} %b\n" "$*"; }
+err()  { printf "${R}[slidely]${NC} %b\n" "$*" >&2; }
 
 usage() {
   printf "${B}Slidely CLI${NC}\n\n"
@@ -22,6 +22,7 @@ usage() {
   printf "  ${G}start${NC}       Start all services (backend + frontend)\n"
   printf "  ${G}stop${NC}        Stop all services\n"
   printf "  ${G}restart${NC}     Restart all services\n"
+  printf "  ${G}share${NC}       Start all services + expose via ngrok\n"
   printf "  ${G}ngrok${NC}       Expose frontend via ngrok\n"
   printf "  ${G}logs${NC}        Tail docker compose logs\n"
   printf "  ${G}status${NC}      Show service statuses\n"
@@ -86,7 +87,7 @@ cmd_status() {
 
 cmd_ngrok() {
   local domain
-  domain="$(grep -oP '(?<=NGROK_DOMAIN=).+' "$REPO_ROOT/.local.env" 2>/dev/null | tr -d '"' || true)"
+  domain="$(sed -n 's/^NGROK_DOMAIN=//p' "$REPO_ROOT/.local.env" 2>/dev/null | tr -d '"' || true)"
   domain="${domain#http://}"; domain="${domain#https://}"; domain="${domain%%/*}"
   [[ -z "$domain" ]] && { err "NGROK_DOMAIN not set in .local.env"; return 1; }
 
@@ -105,6 +106,7 @@ case "${1:-}" in
   start)     cmd_start ;;
   stop)      cmd_stop ;;
   restart)   cmd_stop; cmd_start ;;
+  share)     cmd_start; cmd_ngrok ;;
   ngrok)     cmd_ngrok ;;
   logs)      cmd_logs ;;
   status)    cmd_status ;;

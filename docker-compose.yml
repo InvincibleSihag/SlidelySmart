@@ -52,7 +52,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_BASE_URL: http://localhost:9753
+      API_PROXY_TARGET: http://web:9753
       VITE_PUSHER_KEY: dfb6c7d621fe783518a5
       VITE_PUSHER_CLUSTER: ap2
     depends_on:
