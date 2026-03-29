@@ -28,4 +28,4 @@ def trigger(channel: str, event: str, data: dict) -> None:
     try:
         pusher_client.trigger(channel, event, data)
     except Exception:
-        logger.exception("pusher_trigger_failed", channel=channel, event=event)
+        logger.exception("pusher_trigger_failed", channel=channel, pusher_event=event)

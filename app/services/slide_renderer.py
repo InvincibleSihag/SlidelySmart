@@ -1,5 +1,6 @@
 """Render slide JSON into HTML using Jinja2 templates."""
 
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -70,6 +71,37 @@ def _load_theme_css(theme: str) -> str:
     theme_css = theme_path.read_text() if theme_path.is_file() else ""
 
     return base_css + "\n" + theme_css
+
+
+# ---------------------------------------------------------------------------
+# Theme CSS variable extraction (for agent context)
+# ---------------------------------------------------------------------------
+# NOTE: @sawan - Regex is not good approach, for now this is fine
+_AGENT_RELEVANT_VARS = frozenset({
+    "--slide-bg", "--text-primary", "--text-secondary",
+    "--accent", "--accent-light", "--accent-dark",
+})
+
+
+# NOTE: @sawan - Regex is not good pattern
+@lru_cache(maxsize=8)
+def get_theme_variables(theme: str) -> dict[str, str]:
+    """Parse CSS custom properties from a theme file. Cached after first read.
+
+    Returns a dict of agent-relevant CSS variable names to their values,
+    e.g. ``{"--accent": "#1e3a6e", "--slide-bg": "#f8f9fc", ...}``.
+    """
+    theme_path = _THEMES_DIR / f"{theme}.css"
+    if not theme_path.is_file():
+        theme_path = _THEMES_DIR / "default.css"
+    css = theme_path.read_text()
+    props = dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+)", css))
+    return {k: v.strip() for k, v in props.items() if k in _AGENT_RELEVANT_VARS}
+
+
+# ---------------------------------------------------------------------------
+# Full presentation render
+# ---------------------------------------------------------------------------
 
 
 def render_presentation(presentation: Presentation) -> str:

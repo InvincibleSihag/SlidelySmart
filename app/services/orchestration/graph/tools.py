@@ -7,12 +7,14 @@ the agent service — the graph module itself has no direct dependency on this f
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Callable, Literal
 
 from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
 from app.services.image_search import search_image
+from app.services.slide_renderer import get_theme_variables
 from app.core.schemas.presentation import (
     ElementMetadata,
     ElementStyle,
@@ -122,13 +124,16 @@ class RemoveElement(BaseModel):
 class SetTheme(BaseModel):
     """Set the presentation's visual theme and optionally inject custom CSS.
 
+    IMPORTANT: Call this BEFORE creating any slides. The theme sets the visual
+    foundation that all slides depend on. Not calling SetTheme first will result
+    in unstyled slides.
+
     Available themes:
     - 'default': Corporate navy blue (#1e3a6e) on soft blue-gray backgrounds, professional and authoritative
     - 'dark': Pure black background with white text, minimal borders, strictly black & white — no color accents
     - 'modern': Contemporary style with emerald-green (#059669) gradient accents on warm neutrals
 
-    Call this before creating slides to set the overall look, or call it
-    later to change the theme retroactively (all slides update).
+    Call this later to change the theme retroactively (all slides update).
     Use custom_css for advanced overrides beyond the predefined themes.
     """
 
@@ -165,6 +170,11 @@ class AskHuman(BaseModel):
     - Audience or purpose is unclear
     - Multiple valid interpretations exist
     - Key details are missing (number of slides, depth, style)
+
+    Write questions that are specific and actionable.
+    Bad: "What would you like?" Good: "Who is the target audience — technical engineers or executives?"
+    Always provide options when there are clear, bounded choices.
+    Tone: Be friendly, confident, and concise — you're a design expert, not a form.
     """
 
     question: str = Field(..., description="Clear, specific question to ask the user")
@@ -199,6 +209,25 @@ class ReadSkillFile(BaseModel):
     )
 
 
+class GetPresentationState(BaseModel):
+    """Get the full current state of the presentation.
+
+    Returns complete details: theme, accent colors, custom_css, all slides
+    with their elements, content, styles, and metadata. Use this when you need
+    to inspect the deck before making targeted edits — especially on follow-up
+    queries where you need to see exact content and styles to make precise changes.
+
+    Cost: This returns detailed output. Call it once when you need full context,
+    not after every single tool call. A compact deck snapshot is already included
+    automatically after every tool batch.
+    """
+
+    include_content: bool = Field(
+        default=True,
+        description="Include element content in output. Set to false for a structure-only view.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tool Collections
 # ---------------------------------------------------------------------------
@@ -209,8 +238,27 @@ SLIDE_TOOLS = [CreateSlide, EditSlide, EditElement, AddElement, RemoveElement, D
 # Skill knowledge tools (read-only, no slide side effects)
 SKILL_TOOLS = [LoadSkill, ReadSkillFile]
 
+# Read-only inspection tools
+INSPECTION_TOOLS = [GetPresentationState]
+
 # All tools bound to the LLM at initialization
-ALL_TOOLS = SLIDE_TOOLS + SKILL_TOOLS
+ALL_TOOLS = SLIDE_TOOLS + SKILL_TOOLS + INSPECTION_TOOLS
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _dump(model: BaseModel) -> str:
+    """Serialize a Pydantic model to compact JSON, dropping None fields."""
+    return json.dumps(model.model_dump(exclude_none=True), separators=(",", ":"))
+
+
+def _dump_theme(theme: str) -> str:
+    """Return theme name + CSS accent variables parsed from the theme file."""
+    variables = get_theme_variables(theme)
+    return json.dumps({"theme": theme, **variables}, separators=(",", ":"))
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +277,7 @@ def _execute_create_slide(args: dict, presentation: Presentation) -> str:
     if any(s.id == slide.id for s in presentation.slides):
         return f"Error: Slide with id '{slide.id}' already exists. Use EditSlide to modify it."
     presentation.slides.append(slide)
-    return f"Created slide '{slide.id}' with layout '{slide.layout}' and {len(slide.elements)} elements."
+    return _dump(slide)
 
 
 def _execute_edit_slide(args: dict, presentation: Presentation) -> str:
@@ -243,7 +291,7 @@ def _execute_edit_slide(args: dict, presentation: Presentation) -> str:
                 slide.layout = args["layout"]
             if args.get("notes") is not None:
                 slide.notes = args["notes"]
-            return f"Updated slide '{target_id}'."
+            return _dump(slide)
     return f"Error: Slide '{target_id}' not found."
 
 
@@ -253,7 +301,7 @@ def _execute_delete_slide(args: dict, presentation: Presentation) -> str:
     for i, slide in enumerate(presentation.slides):
         if slide.id == target_id:
             presentation.slides.pop(i)
-            return f"Deleted slide '{target_id}'."
+            return f"Deleted slide '{target_id}'. Deck has {len(presentation.slides)} slides."
     return f"Error: Slide '{target_id}' not found."
 
 
@@ -275,7 +323,6 @@ def _execute_edit_element(args: dict, presentation: Presentation) -> str:
                         existing_meta = element.metadata.model_dump(exclude_none=True) if element.metadata else {}
                         new_meta = args["metadata"] if isinstance(args["metadata"], dict) else args["metadata"]
                         merged = {**existing_meta, **new_meta}
-                        # Re-validate through the union so the merged dict becomes the right typed model
                         element.metadata = SlideElement.model_validate(
                             {"id": element.id, "type": element.type, "metadata": merged},
                         ).metadata
@@ -283,7 +330,7 @@ def _execute_edit_element(args: dict, presentation: Presentation) -> str:
                         existing = element.style.model_dump(exclude_none=True) if element.style else {}
                         merged = {**existing, **args["style"]}
                         element.style = ElementStyle.model_validate(merged)
-                    return f"Updated element '{element_id}' in slide '{slide_id}'."
+                    return _dump(element)
             return f"Error: Element '{element_id}' not found in slide '{slide_id}'."
     return f"Error: Slide '{slide_id}' not found."
 
@@ -301,7 +348,7 @@ def _execute_add_element(args: dict, presentation: Presentation) -> str:
                 slide.elements.insert(position, new_element)
             else:
                 slide.elements.append(new_element)
-            return f"Added element '{new_element.id}' to slide '{slide_id}'."
+            return _dump(new_element)
     return f"Error: Slide '{slide_id}' not found."
 
 
@@ -314,7 +361,7 @@ def _execute_remove_element(args: dict, presentation: Presentation) -> str:
             for i, element in enumerate(slide.elements):
                 if element.id == element_id:
                     slide.elements.pop(i)
-                    return f"Removed element '{element_id}' from slide '{slide_id}'."
+                    return f"Removed element '{element_id}' from slide '{slide_id}'. Slide has {len(slide.elements)} elements."
             return f"Error: Element '{element_id}' not found in slide '{slide_id}'."
     return f"Error: Slide '{slide_id}' not found."
 
@@ -324,7 +371,7 @@ def _execute_set_theme(args: dict, presentation: Presentation) -> str:
     presentation.theme = args["theme"]
     if args.get("custom_css") is not None:
         presentation.custom_css = args["custom_css"]
-    return f"Theme set to '{presentation.theme}'."
+    return _dump_theme(presentation.theme)
 
 
 def _execute_search_image(args: dict, presentation: Presentation) -> str:
@@ -342,7 +389,19 @@ def _execute_reorder_slides(args: dict, presentation: Presentation) -> str:
     reordered = [slide_map[sid] for sid in desired_order]
     remaining = [s for s in presentation.slides if s.id not in set(desired_order)]
     presentation.slides = reordered + remaining
-    return f"Reordered slides: {desired_order}"
+    return f"Reordered: {[s.id for s in presentation.slides]}"
+
+
+def _execute_get_presentation_state(args: dict, presentation: Presentation) -> str:
+    """Return the full presentation state as JSON."""
+    state = presentation.model_dump(exclude_none=True)
+    state["_theme_variables"] = get_theme_variables(presentation.theme or "default")
+    if not args.get("include_content", True):
+        for slide in state.get("slides", []):
+            for el in slide.get("elements", []):
+                el.pop("content", None)
+                el.pop("table_data", None)
+    return json.dumps(state, separators=(",", ":"))
 
 
 # Registry: tool name -> executor function (slide tools only)
@@ -356,6 +415,7 @@ _SLIDE_EXECUTORS: dict[str, Callable[[dict, Presentation], str]] = {
     "ReorderSlides": _execute_reorder_slides,
     "SetTheme": _execute_set_theme,
     "SearchImage": _execute_search_image,
+    "GetPresentationState": _execute_get_presentation_state,
 }
 
 # Names of skill tools for dispatch routing

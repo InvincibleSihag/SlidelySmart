@@ -35,30 +35,33 @@ class VersionManager:
         if not latest:
             return None
         return Presentation.model_validate(latest.content)
-
+    # TODO: This method can be improved, better way of creating summary
     @staticmethod
     def format_slide_summary(presentation: Presentation) -> str:
-        """Build a concise slide inventory for injection into follow-up messages.
+        """Build a slide inventory for injection into follow-up messages.
 
-        Gives the LLM a reliable mapping of slide IDs, layouts, and content
-        hints so it can reference or edit slides by ID without relying on
-        conversation history alone.
+        Includes theme, slide IDs, layouts, element IDs with types and content
+        hints so the LLM can target EditElement precisely without guessing.
         """
-        lines: list[str] = [f"Current presentation has {len(presentation.slides)} slides:"]
+        theme = presentation.theme or "default"
+        lines: list[str] = [f"Presentation: theme={theme} | {len(presentation.slides)} slides"]
         for slide in presentation.slides:
-            hint = ""
-            if slide.elements:
-                el = slide.elements[0]
-                first = el.content
-                if isinstance(first, str):
-                    hint = first
-                elif isinstance(first, list) and first:
-                    hint = first[0]
+            el_parts: list[str] = []
+            for el in slide.elements:
+                tag = f"{el.id}:{el.type}"
+                # Content hint
+                if isinstance(el.content, str):
+                    preview = el.content[:40] + "..." if len(el.content) > 40 else el.content
+                    tag += f' "{preview}"'
+                elif isinstance(el.content, list):
+                    tag += f"({len(el.content)})"
                 elif el.table_data:
-                    hint = f"Table: {len(el.table_data)} rows"
-                if len(hint) > 60:
-                    hint = hint[:57] + "..."
-            lines.append(f'- {slide.id} ({slide.layout}): "{hint}"')
+                    tag += f"(table:{len(el.table_data)}rows)"
+                # Column placement
+                if el.metadata and getattr(el.metadata, "column", None):
+                    tag += f"{{{el.metadata.column}}}"
+                el_parts.append(tag)
+            lines.append(f"- {slide.id} ({slide.layout}): [{', '.join(el_parts)}]")
         return "\n".join(lines)
 
     def create(

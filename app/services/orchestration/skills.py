@@ -115,22 +115,19 @@ class SkillStore:
         """List all loaded skill names."""
         return list(self._skills.keys())
 
-    def catalog_text(self) -> str:
-        """Render the catalog block for system prompt injection.
+    def catalog_data(self) -> list[dict[str, str | list[str]]]:
+        """Return structured skill metadata for Jinja2 template rendering.
 
-        Returns a compact markdown list: one line per skill with name,
-        description, and tags.
+        Each entry has 'name', 'description', and 'tags' keys.
         """
-        if not self._skills:
-            return "No skills available."
-        lines = []
-        for skill in self._skills.values():
-            tag_str = ", ".join(skill.meta.tags)
-            lines.append(
-                f"- **{skill.meta.name}**: {skill.meta.description} "
-                f"[tags: {tag_str}]"
-            )
-        return "\n".join(lines)
+        return [
+            {
+                "name": skill.meta.name,
+                "description": skill.meta.description,
+                "tags": skill.meta.tags,
+            }
+            for skill in self._skills.values()
+        ]
 
     def load_skill(self, skill_name: str) -> str:
         """Return the full SKILL.md body for a skill (tier 2 disclosure)."""

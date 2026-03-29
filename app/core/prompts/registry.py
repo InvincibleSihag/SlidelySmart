@@ -1,6 +1,7 @@
 """Prompt registry: load and render Jinja templates by name."""
 
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -21,7 +22,7 @@ class PromptRegistry:
     USER_PROMPT = "user_prompt.j2"
 
 
-def get_prompt(name: str, **context: str | int | bool) -> str:
+def get_prompt(name: str, **context: Any) -> str:
     """Load and render a prompt template. Returns the rendered string."""
     template = _env.get_template(name)
     return template.render(**context).strip()

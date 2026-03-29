@@ -63,5 +63,5 @@ For per-element adjustments, use `EditElement` with `style` overrides.
 
 ## Reference Files
 
-For concrete examples, use `ReadSkillFile`:
-- `refs/edit_examples.md` — Before/after tool call examples for common operations
+Use `ReadSkillFile` to access examples:
+- `refs/edit_examples.md` — **Load when** you need before/after tool call examples for common edit operations

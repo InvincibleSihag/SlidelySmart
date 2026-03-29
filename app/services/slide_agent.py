@@ -71,12 +71,12 @@ def _build_user_prompt(
 
 def _build_system_prompt(
     template: str,
-    skill_catalog: str = "",
+    skills: list[dict] | None = None,
 ) -> str:
-    """Build system prompt from template."""
+    """Build system prompt from template with structured skill data."""
     return get_prompt(
         template,
-        skill_catalog=skill_catalog,
+        skills=skills or [],
     )
 
 
@@ -165,7 +165,7 @@ async def run_agent(
             history = [m for m in snapshot_messages if not isinstance(m, SystemMessage)]
             system_prompt = _build_system_prompt(
                 config.system_prompt_template,
-                skill_catalog=skill_store.catalog_text(),
+                skills=skill_store.catalog_data(),
             )
 
             slide_summary = ""
@@ -203,7 +203,7 @@ async def run_agent(
             initial_messages = _build_initial_messages(
                 _build_system_prompt(
                     config.system_prompt_template,
-                    skill_catalog=skill_store.catalog_text(),
+                    skills=skill_store.catalog_data(),
                 ),
                 user_prompt,
             )

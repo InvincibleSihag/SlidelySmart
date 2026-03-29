@@ -73,6 +73,15 @@ Write notes on EVERY content slide. Notes should contain:
 - Context and details too verbose for the slide surface
 - Transition phrasing to the next slide
 
+## Deck Narrative Flow
+
+Every presentation needs a story arc:
+1. **Opening** (title layout) — Hook with a compelling title and clear subtitle
+2. **Context** (1-2 slides) — Why this topic matters, set the stage
+3. **Body** (core content) — Deliver the substance with varied layouts
+4. **Synthesis** (1 slide) — Key takeaways or summary
+5. **Closing** (title layout) — End with a clear call to action or memorable statement
+
 ## Slide Space Constraints
 
 The slide canvas is **960x540px** (16:9) with **72px horizontal** and **56px vertical** padding. Content that overflows is **clipped and invisible**. Treat every slide as a fixed canvas — budget content tightly.
@@ -171,8 +180,8 @@ Common patterns:
 
 ## Reference Files
 
-For detailed specifications and design recipes, use `ReadSkillFile`:
-- `refs/layout_specs.md` — Per-layout element combinations and examples
-- `refs/element_schemas.md` — Detailed content format specs for every element type
-- `refs/design_recipes.md` — Ready-to-use design patterns with complete JSON examples
-- `refs/deck_templates.md` — Standard deck structures for common presentation types
+Use `ReadSkillFile` to access detailed specifications:
+- `refs/layout_specs.md` — **Load when** deciding which elements work in each layout
+- `refs/element_schemas.md` — **Load when** unsure about content format for any element type
+- `refs/design_recipes.md` — **Load when** you need ready-to-use visual pattern examples with full JSON
+- `refs/deck_templates.md` — **Load when** creating a full presentation from scratch (has standard structures for pitch decks, reports, etc.)
