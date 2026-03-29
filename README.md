@@ -68,8 +68,8 @@ stateDiagram-v2
     route_after_model --> reject_multiple_hitl: Multiple AskHuman
     route_after_model --> finalize: No tool calls
 
-    handle_tool_calls --> call_model: Execute tools,\nupdate presentation,\nupload HTML to GCS
-    handle_hitl --> call_model: interrupt() → checkpoint\n→ resume with human response
+    handle_tool_calls --> call_model: Execute tools, update presentation, upload HTML to GCS
+    handle_hitl --> call_model: interrupt() → checkpoint → resume with human response
     reject_multiple_hitl --> call_model: "Only one question\nat a time"
     finalize --> [*]
 
