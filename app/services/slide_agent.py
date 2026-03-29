@@ -27,7 +27,7 @@ from app.services.pusher import trigger as pusher_trigger
 
 logger = get_logger(__name__)
 
-MODEL_NAME = "gemini-3-flash-preview"
+MODEL_NAME = "gemini-3.1-pro-preview"
 
 StatusCallback = Callable[[str, dict], None]
 
