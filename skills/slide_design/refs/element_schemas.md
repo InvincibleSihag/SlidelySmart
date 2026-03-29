@@ -1,5 +1,7 @@
 # Element Content Schemas
 
+> **Tip**: For visual design patterns using these elements (big metrics, card callouts, accent headings), see `refs/design_recipes.md`.
+
 Detailed format specifications for each element type.
 
 Every element must have an `id` (unique within the slide, e.g. `el-1`), a `type`, and `content`.
@@ -40,6 +42,12 @@ Available style properties:
 - `text_align` — e.g. `"left"`, `"center"`, `"right"`
 - `background_color` — element background color
 - `opacity` — `0.0` to `1.0`
+- `padding` — e.g. `"16px"`, `"10px 20px"`
+- `margin` — e.g. `"12px 0"`, `"0 auto"`
+- `border_radius` — e.g. `"8px"`, `"50%"`
+- `width` — e.g. `"80%"`, `"400px"`
+- `max_width` — e.g. `"600px"`, `"100%"`
+- `line_height` — e.g. `"1.6"`, `"28px"`
 
 Style is optional. When omitted, theme defaults apply.
 
@@ -59,16 +67,16 @@ Style is optional. When omitted, theme defaults apply.
 - Usage: Used on content, two_column, image_text layouts instead of `title`
 
 ## `text`
-- **content**: `string` — Paragraph text. Keep concise (1-3 sentences).
+- **content**: `string` — Paragraph text. Max ~150 chars (1-2 short sentences).
 - **metadata**: not used
-- Tip: If you need more than 3 sentences, use speaker notes for the overflow
+- Tip: Anything longer belongs in speaker notes, not on the slide
 
 ## `bullets`
 - **content**: `list[string]` — Each item is a bullet point.
 - **metadata**: not used (except `{"column": "right"}` for two_column layout)
 - Rules:
-  - Maximum 6 bullets per slide
-  - Each bullet should be one line
+  - Maximum **5 bullets** per element (3 per column in two_column)
+  - Each bullet under ~80 chars — must fit on one line
   - Start each bullet with an action verb or key noun
 
 Example: `["Revenue up 25%", "Churn down to 3%", "5 new markets"]`
@@ -79,17 +87,18 @@ Example: `["Revenue up 25%", "Churn down to 3%", "5 new markets"]`
 - Use when: Order matters (steps, rankings, priorities)
 
 ## `image`
-- **content**: `string` — Description of the image (used as placeholder text)
-- **metadata**: `{"url": "string (optional)", "alt": "string"}`
-  - `url`: Direct image URL if available, otherwise omit
+- **content**: `string` — The image URL. Call **SearchImage** first to get a real URL, then place it here. Never make up URLs.
+- **metadata**: `{"alt": "string"}`
   - `alt`: Accessibility text describing the image
+
+**Workflow**: Call `SearchImage(query="...")` → get back a real URL → put that URL in `content`.
 
 Example:
 ```json
 {
   "id": "el-3",
   "type": "image",
-  "content": "Bar chart showing quarterly revenue growth",
+  "content": "<url from SearchImage>",
   "metadata": {"alt": "Revenue growth Q1-Q4 2024"}
 }
 ```
@@ -121,7 +130,7 @@ Example:
 - Rules:
   - First row is always treated as the header
   - All rows must have the same number of columns
-  - Keep tables small (max 5 columns, 6-8 data rows)
+  - Max **4 data rows** + 1 header row, max **4 columns**
   - Cell text supports inline markdown (bold, italic, etc.)
 
 Example:

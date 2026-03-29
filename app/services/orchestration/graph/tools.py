@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Callable, Literal
 from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
+from app.services.image_search import search_image
 from app.core.schemas.presentation import (
     ElementMetadata,
     ElementStyle,
@@ -20,6 +21,7 @@ from app.core.schemas.presentation import (
     Presentation,
     Slide,
     SlideElement,
+    ThemeType,
 )
 
 if TYPE_CHECKING:
@@ -109,6 +111,44 @@ class RemoveElement(BaseModel):
     element_id: str = Field(..., description="ID of the element to remove")
 
 
+class SetTheme(BaseModel):
+    """Set the presentation's visual theme and optionally inject custom CSS.
+
+    Available themes:
+    - 'default': Clean, professional light theme with blue accents on white
+    - 'dark': Dark background with light text and cyan accents
+    - 'modern': Contemporary style with purple accents and subtle gradients
+
+    Call this before creating slides to set the overall look, or call it
+    later to change the theme retroactively (all slides update).
+    Use custom_css for advanced overrides beyond the predefined themes.
+    """
+
+    theme: ThemeType = Field(..., description="Theme name to apply")
+    custom_css: str | None = Field(
+        default=None,
+        description="Optional raw CSS appended after theme stylesheet for custom overrides",
+    )
+
+
+class SearchImage(BaseModel):
+    """Search for a real image by description. Returns a URL to put in the image element's `content` field.
+
+    Call this BEFORE creating or editing an image element so you have a real URL.
+    Put the returned URL in the element's `content` field (not metadata).
+    Write a specific, descriptive query that describes the photo you need.
+
+    Good queries: "modern office team collaborating", "abstract blue technology network"
+    Bad queries: "image", "picture", "photo"
+    """
+
+    query: str = Field(..., description="Descriptive search query for the image, e.g. 'startup team celebrating product launch'")
+    orientation: Literal["landscape", "portrait", "squarish"] = Field(
+        default="landscape",
+        description="Image orientation — 'landscape' for wide slides, 'portrait' for tall visuals, 'squarish' for balanced",
+    )
+
+
 class AskHuman(BaseModel):
     """Ask the user a clarifying question when the request is ambiguous.
 
@@ -156,7 +196,7 @@ class ReadSkillFile(BaseModel):
 # ---------------------------------------------------------------------------
 
 # Slide manipulation tools
-SLIDE_TOOLS = [CreateSlide, EditSlide, EditElement, AddElement, RemoveElement, DeleteSlide, ReorderSlides, AskHuman]
+SLIDE_TOOLS = [CreateSlide, EditSlide, EditElement, AddElement, RemoveElement, DeleteSlide, ReorderSlides, SetTheme, SearchImage, AskHuman]
 
 # Skill knowledge tools (read-only, no slide side effects)
 SKILL_TOOLS = [LoadSkill, ReadSkillFile]
@@ -271,6 +311,19 @@ def _execute_remove_element(args: dict, presentation: Presentation) -> str:
     return f"Error: Slide '{slide_id}' not found."
 
 
+def _execute_set_theme(args: dict, presentation: Presentation) -> str:
+    """Set the presentation theme and optional custom CSS."""
+    presentation.theme = args["theme"]
+    if args.get("custom_css") is not None:
+        presentation.custom_css = args["custom_css"]
+    return f"Theme set to '{presentation.theme}'."
+
+
+def _execute_search_image(args: dict, presentation: Presentation) -> str:
+    """Search for a real image and return its URL."""
+    return search_image(args["query"], args.get("orientation", "landscape"))
+
+
 def _execute_reorder_slides(args: dict, presentation: Presentation) -> str:
     """Reorder slides by ID sequence."""
     desired_order = args["slide_ids"]
@@ -293,6 +346,8 @@ _SLIDE_EXECUTORS: dict[str, Callable[[dict, Presentation], str]] = {
     "RemoveElement": _execute_remove_element,
     "DeleteSlide": _execute_delete_slide,
     "ReorderSlides": _execute_reorder_slides,
+    "SetTheme": _execute_set_theme,
+    "SearchImage": _execute_search_image,
 }
 
 # Names of skill tools for dispatch routing
@@ -337,6 +392,8 @@ def create_tool_executor(
     """
 
     def _execute(tool_name: str, tool_args: dict, presentation: Presentation) -> str:
+        logger.info("tool_invoked", tool=tool_name, args=tool_args)
+
         # Skill tools: dispatch to SkillStore (presentation unused)
         if tool_name in _SKILL_TOOL_NAMES and skill_store is not None:
             skill_executor = _SKILL_EXECUTORS.get(tool_name)

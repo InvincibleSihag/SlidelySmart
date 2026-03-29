@@ -28,5 +28,8 @@ class Settings(BaseSettings):
     pusher_secret: str = ""
     pusher_cluster: str = "mt1"
 
+    # Unsplash (image search for slides)
+    unsplash_access_key: str = ""
+
 
 settings = Settings()

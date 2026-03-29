@@ -3,7 +3,7 @@ interface EmptyStateProps {
 }
 
 const SUGGESTIONS = [
-  "Pitch deck for a startup",
+  "Pitch deck for a AI startup",
   "Quarterly review",
   "Design philosophy talk",
 ];
@@ -16,19 +16,18 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
       animation: "fadeUp 0.6s ease forwards",
     }}>
       <div style={{
-        width: 48, height: 48, borderRadius: 14,
-        border: "1.5px solid rgba(0,0,0,0.08)",
+        width: 48, height: 48, borderRadius: 14, background: "#000",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <rect x="2" y="4" width="18" height="14" rx="2" stroke="rgba(0,0,0,0.2)" strokeWidth="1.2" />
-          <line x1="7" y1="10" x2="15" y2="10" stroke="rgba(0,0,0,0.15)" strokeWidth="1" strokeLinecap="round" />
-          <line x1="7" y1="13" x2="12" y2="13" stroke="rgba(0,0,0,0.15)" strokeWidth="1" strokeLinecap="round" />
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="#fff" strokeWidth="1.2" />
+          <line x1="5" y1="7" x2="11" y2="7" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+          <line x1="5" y1="9.5" x2="9" y2="9.5" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
         </svg>
       </div>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 16, fontWeight: 500, color: "#000", letterSpacing: "-0.01em" }}>
-          Create a Presentation
+          Slidely Agent
         </div>
         <div style={{ fontSize: 13, color: "rgba(0,0,0,0.35)", marginTop: 6, lineHeight: 1.5 }}>
           Describe what you need and the agent<br />will craft your slides in real time.

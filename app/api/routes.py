@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from app.core.logging import get_logger
 from app.core.schemas.enums import JobStatus
 from app.core.schemas.presentation import SlideDeckPayload
-from app.db.managers import MessageManager, VersionManager
+from app.db.managers.message import MessageManager
+from app.db.managers.version import VersionManager
 from app.db.models import SlideDeck
 from app.db.session import SessionDep
 from app.services.storage import SLIDE_DECKS_PREFIX, get_version_html

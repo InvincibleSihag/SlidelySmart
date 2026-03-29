@@ -17,7 +17,9 @@ from uuid import UUID, uuid4
 from app.core.logging import get_logger
 from app.core.schemas.enums import JobStatus
 from app.core.schemas.presentation import SlideDeckPayload
-from app.db.managers import MessageManager, SnapshotManager, VersionManager
+from app.db.managers.message import MessageManager
+from app.db.managers.snapshot import SnapshotManager
+from app.db.managers.version import VersionManager
 from app.db.models import SlideDeck
 from app.db.session import SlidelySyncSession
 from app.services.slide_agent import run_agent

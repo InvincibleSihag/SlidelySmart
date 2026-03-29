@@ -1,6 +1,8 @@
 {% from "_macros.html.j2" import render_element, slide_bg %}
 <div class="slide slide-blank" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
-  {% for element in slide.elements %}
-    {{ render_element(element) }}
-  {% endfor %}
+  <div class="slide-body">
+    {% for element in slide.elements %}
+      {{ render_element(element) }}
+    {% endfor %}
+  </div>
 </div>

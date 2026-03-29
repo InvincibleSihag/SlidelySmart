@@ -1,6 +1,19 @@
+{#-
+  Content layout. Heading renders above, body content below in a
+  flex-constrained wrapper that prevents overflow/clipping.
+-#}
 {% from "_macros.html.j2" import render_element, slide_bg %}
 <div class="slide slide-content" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
-    {{ render_element(element) }}
+    {% if element.type in ("heading", "title", "subtitle") %}
+      {{ render_element(element) }}
+    {% endif %}
   {% endfor %}
+  <div class="slide-body">
+    {% for element in slide.elements %}
+      {% if element.type not in ("heading", "title", "subtitle", "notes") %}
+        {{ render_element(element) }}
+      {% endif %}
+    {% endfor %}
+  </div>
 </div>

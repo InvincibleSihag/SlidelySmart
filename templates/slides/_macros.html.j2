@@ -14,6 +14,12 @@
     {%- if element.style.text_align %}text-align: {{ element.style.text_align }};{% endif %}
     {%- if element.style.background_color %}background-color: {{ element.style.background_color }};{% endif %}
     {%- if element.style.opacity is not none %}opacity: {{ element.style.opacity }};{% endif %}
+    {%- if element.style.padding %}padding: {{ element.style.padding }};{% endif %}
+    {%- if element.style.margin %}margin: {{ element.style.margin }};{% endif %}
+    {%- if element.style.border_radius %}border-radius: {{ element.style.border_radius }};{% endif %}
+    {%- if element.style.width %}width: {{ element.style.width }};{% endif %}
+    {%- if element.style.max_width %}max-width: {{ element.style.max_width }};{% endif %}
+    {%- if element.style.line_height %}line-height: {{ element.style.line_height }};{% endif %}
     "
   {%- endif %}
 {%- endmacro %}
@@ -53,9 +59,15 @@
   {% elif element.type == "code" %}
     <pre class="slide-code" {{ el_attrs(element) }} {{ element_style(element) }}><code {% if element.metadata and element.metadata.language %}class="language-{{ element.metadata.language }}"{% endif %}>{{ element.content }}</code></pre>
   {% elif element.type == "image" %}
-    <div class="slide-image" {{ el_attrs(element) }} {% if element.metadata and element.metadata.url %}style="background-image: url('{{ element.metadata.url }}')"{% endif %}>
-      <span class="image-placeholder">{{ element.content }}</span>
+    {% if element.content and element.content.startswith("http") %}
+    <div class="slide-image" {{ el_attrs(element) }} {{ element_style(element) }}>
+      <img src="{{ element.content }}" alt="{{ element.metadata.alt if element.metadata and element.metadata.alt else '' }}" />
     </div>
+    {% else %}
+    <div class="slide-image" {{ el_attrs(element) }} {{ element_style(element) }}>
+      <span class="image-placeholder">{{ element.content or 'Image' }}</span>
+    </div>
+    {% endif %}
   {% elif element.type == "table" %}
     <table class="slide-table" {{ el_attrs(element) }} {{ element_style(element) }}>
       {% if element.table_data is iterable and element.table_data is not string %}

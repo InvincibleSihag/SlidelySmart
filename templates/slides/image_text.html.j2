@@ -2,7 +2,7 @@
 <div class="slide slide-image-text" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
     {% if element.type in ("heading", "title") %}
-      <h2 class="slide-heading" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
+      {{ render_element(element) }}
     {% endif %}
   {% endfor %}
   <div class="image-text-layout">

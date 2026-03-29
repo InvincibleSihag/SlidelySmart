@@ -1,0 +1,424 @@
+/* ============================================================
+   Base Slide Styles
+   Provides layout, typography, and element styling for all slides.
+   Theme files override CSS custom properties defined here.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* --- CSS Custom Properties (defaults — overridden by theme files) --- */
+.slide {
+  --slide-bg: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-dark: #1d4ed8;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --code-bg: #f8fafc;
+  --code-border: #e2e8f0;
+  --quote-border: var(--accent);
+  --table-header-bg: #f8fafc;
+  --table-border: #e2e8f0;
+  --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --slide-padding-x: 72px;
+  --slide-padding-y: 56px;
+}
+
+/* --- Slide Container --- */
+.slide {
+  width: 960px;
+  height: 540px;
+  box-sizing: border-box;
+  padding: var(--slide-padding-y) var(--slide-padding-x);
+  background: var(--slide-bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- Title Slide --- */
+.slide-title {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.slide-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+}
+
+/* --- Section Header --- */
+.slide-section-header {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.slide-section-header .section-title {
+  font-family: var(--font-heading);
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.slide-section-header .section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.slide-section-header .section-subtitle {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin: 16px 0 0 0;
+  max-width: 600px;
+}
+
+/* --- Content Slide --- */
+.slide-content {
+  gap: 8px;
+}
+
+/* Body wrapper — takes remaining space, clips overflow */
+.slide-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- Two Column Layout --- */
+.slide-two-column {
+  gap: 8px;
+}
+.columns {
+  display: flex;
+  gap: 40px;
+  flex: 1;
+  min-height: 0;
+}
+.column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- Image + Text Layout --- */
+.slide-image-text {
+  gap: 8px;
+}
+.image-text-layout {
+  display: flex;
+  gap: 40px;
+  flex: 1;
+  align-items: center;
+  min-height: 0;
+}
+.image-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.text-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+
+.slide-main-title {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+
+.slide-heading {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+  line-height: 1.25;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+  flex-shrink: 0;
+}
+
+.slide-subtitle {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.slide-text {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Lists
+   ============================================================ */
+
+.slide-bullets {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin: 0;
+  padding-left: 0;
+  line-height: 1.6;
+  list-style: none;
+  min-height: 0;
+  overflow: hidden;
+}
+.slide-numbered {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin: 0;
+  padding-left: 1.4em;
+  line-height: 1.6;
+  min-height: 0;
+  overflow: hidden;
+}
+.slide-bullets li {
+  margin-bottom: 10px;
+  padding-left: 24px;
+  position: relative;
+}
+.slide-bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.slide-numbered li {
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+.slide-numbered li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Quote
+   ============================================================ */
+
+.slide-quote {
+  border-left: 4px solid var(--quote-border);
+  padding: 20px 28px;
+  margin: 16px 0;
+  font-size: 22px;
+  font-style: italic;
+  color: var(--text-secondary);
+  background: var(--accent-light);
+  border-radius: 0 12px 12px 0;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Code Block
+   ============================================================ */
+
+.slide-code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 12px 0;
+  overflow: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-height: 0;
+}
+.slide-code code {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* ============================================================
+   Image
+   ============================================================ */
+
+.slide-image {
+  width: 100%;
+  max-height: 380px;
+  min-height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide-image img {
+  width: 100%;
+  height: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+.image-side .slide-image {
+  max-height: 100%;
+  height: 100%;
+}
+.image-side .slide-image img {
+  max-height: 100%;
+}
+.slide-image .image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100px;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: italic;
+  background: var(--accent-light);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   Table
+   ============================================================ */
+
+.slide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  margin: 12px 0;
+  min-height: 0;
+}
+.slide-table th,
+.slide-table td {
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--table-border);
+}
+.slide-table thead tr {
+  background: var(--table-header-bg);
+}
+.slide-table th {
+  font-weight: 600;
+  color: var(--accent-dark);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--accent);
+}
+.slide-table td {
+  color: var(--text-primary);
+}
+.slide-table tbody tr:nth-child(even) {
+  background: var(--accent-light);
+}
+.slide-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ============================================================
+   Rich-text inline styles
+   ============================================================ */
+
+.slide a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.slide a:hover {
+  text-decoration: underline;
+}
+.slide strong {
+  font-weight: 600;
+}
+.slide code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.slide-code code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ============================================================
+   Body-level flex-shrink — allow content inside .slide-body
+   to shrink gracefully instead of overflowing and clipping.
+   Top-level headings (direct .slide children) keep flex-shrink: 0
+   so they always render.
+   ============================================================ */
+
+.slide-body .slide-text,
+.slide-body .slide-bullets,
+.slide-body .slide-numbered,
+.slide-body .slide-quote,
+.slide-body .slide-code,
+.slide-body .slide-image {
+  flex-shrink: 1;
+}
+
+/* ============================================================
+   Blank Layout — centered content container
+   ============================================================ */
+
+.slide-blank .slide-body {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}

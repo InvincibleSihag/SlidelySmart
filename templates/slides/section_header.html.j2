@@ -1,10 +1,12 @@
-{% from "_macros.html.j2" import slide_bg, el_attrs, element_style %}
+{% from "_macros.html.j2" import render_element, slide_bg, el_attrs, element_style %}
 <div class="slide slide-section-header" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
   {% for element in slide.elements %}
     {% if element.type in ("title", "heading") %}
       <h2 class="section-title" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
     {% elif element.type in ("subtitle", "text") %}
       <p class="section-subtitle" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</p>
+    {% elif element.type != "notes" %}
+      {{ render_element(element) }}
     {% endif %}
   {% endfor %}
 </div>

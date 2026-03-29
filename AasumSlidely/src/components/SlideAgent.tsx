@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type { HITLSubmitData } from "../types";
 import { useJobStore } from "../stores/job-store";
 import { usePusherJob } from "../hooks/usePusherJob";
-import { useJobRecovery, saveDeckId, clearDeckId } from "../hooks/useJobRecovery";
+import { useJobRecovery } from "../hooks/useJobRecovery";
 import { postJob, postResumeJob } from "../lib/api";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatBody } from "./chat/ChatBody";
@@ -12,6 +13,7 @@ import { SlidePanel } from "./slides/SlidePanel";
 export function SlideAgent() {
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   const {
     deckId, phase, chatItems, slidesHtml, slideCount,
@@ -30,13 +32,6 @@ export function SlideAgent() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatItems, lastThinkingText, phase]);
-
-  // Clear persisted deck ID on terminal states
-  useEffect(() => {
-    if (phase === "completed" || phase === "failed") {
-      clearDeckId();
-    }
-  }, [phase]);
 
   const isGenerating = phase === "processing" || phase === "queued" || phase === "submitting";
   const isWaitingHITL = phase === "waiting_for_input";
@@ -64,11 +59,11 @@ export function SlideAgent() {
       });
 
       startJob(response.job_id);
-      saveDeckId(response.job_id);
+      navigate(`/${response.job_id}`, { replace: true });
     } catch {
       handleJobFailed("Failed to create job. Please try again.");
     }
-  }, [input, inputDisabled, deckId, phase, appendChatItem, setPhase, startJob, handleJobFailed]);
+  }, [input, inputDisabled, deckId, phase, appendChatItem, setPhase, startJob, handleJobFailed, navigate]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -107,7 +102,7 @@ export function SlideAgent() {
         transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
         display: "flex", flexDirection: "column", height: "100%",
       }}>
-        <ChatHeader status={phase} slideCount={slideCount} />
+        <ChatHeader slideCount={slideCount} />
 
         <ChatBody
           chatItems={chatItems}

@@ -1,3 +1,5 @@
+import { MarkdownRenderer } from "./MarkdownRenderer";
+
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
@@ -22,7 +24,7 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
         color: role === "user" ? "#fff" : "#000",
         fontSize: 14, lineHeight: 1.55, letterSpacing: "-0.005em",
       }}>
-        {content}
+        {role === "assistant" ? <MarkdownRenderer content={content} /> : content}
       </div>
       <div style={{
         fontSize: 10, color: "rgba(0,0,0,0.2)",

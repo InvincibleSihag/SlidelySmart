@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from google.api_core.exceptions import NotFound
+
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -53,6 +55,9 @@ class GCSStorageClient(StorageClient):
         try:
             blob = self._bucket.blob(path)
             return blob.download_as_text()
+        except NotFound:
+            logger.debug("storage_blob_not_found", path=path)
+            return None
         except Exception:
             logger.exception("storage_download_failed", path=path)
             return None

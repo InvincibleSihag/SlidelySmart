@@ -7,10 +7,11 @@
     - All others go left
 -#}
 <div class="slide slide-two-column" data-slide-id="{{ slide.id }}"{{ slide_bg(slide) }}>
+  {% set ns = namespace(heading_rendered=false) %}
   {% for element in slide.elements %}
-    {% if element.type in ("heading", "title") %}
-      <h2 class="slide-heading" {{ el_attrs(element) }} {{ element_style(element) }}>{{ element.content | rich_text }}</h2>
-      {% break %}
+    {% if not ns.heading_rendered and element.type in ("heading", "title") %}
+      {{ render_element(element) }}
+      {% set ns.heading_rendered = true %}
     {% endif %}
   {% endfor %}
   <div class="columns">

@@ -50,7 +50,8 @@ Use `EditSlide` with the full elements array. All elements must include `id`, `t
 3. `ReorderSlides` to set the final order
 
 ### Changing the theme or style
-Edit each affected slide individually. There is no batch-update tool.
+Use `SetTheme` to change the presentation-wide theme (default, dark, modern).
+For per-element adjustments, use `EditElement` with `style` overrides.
 
 ## ID Conventions
 

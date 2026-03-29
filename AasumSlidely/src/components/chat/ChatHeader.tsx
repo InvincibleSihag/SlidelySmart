@@ -1,25 +1,8 @@
-import type { Phase } from "../../types";
-
 interface ChatHeaderProps {
-  status: Phase;
   slideCount: number;
 }
 
-function getStatusLabel(status: Phase): string {
-  switch (status) {
-    case "submitting":
-    case "queued": return "queued\u2026";
-    case "processing": return "generating\u2026";
-    case "waiting_for_input": return "waiting for input";
-    case "hitl_submitting": return "resuming\u2026";
-    case "reconnecting": return "reconnecting\u2026";
-    case "failed": return "error";
-    case "completed": return "done";
-    default: return "ready";
-  }
-}
-
-export function ChatHeader({ status, slideCount }: ChatHeaderProps) {
+export function ChatHeader({ slideCount }: ChatHeaderProps) {
   return (
     <div style={{
       padding: "20px 28px",
@@ -37,16 +20,8 @@ export function ChatHeader({ status, slideCount }: ChatHeaderProps) {
             <line x1="5" y1="9.5" x2="9" y2="9.5" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
           </svg>
         </div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#000", letterSpacing: "-0.01em" }}>
-            Slides Agent
-          </div>
-          <div style={{
-            fontSize: 11, color: "rgba(0,0,0,0.35)",
-            fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.02em", marginTop: 1,
-          }}>
-            {getStatusLabel(status)}
-          </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#000", letterSpacing: "-0.01em" }}>
+          Slidely Agent
         </div>
       </div>
       {slideCount > 0 && (

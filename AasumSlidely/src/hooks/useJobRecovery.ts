@@ -1,11 +1,10 @@
 import { useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 import { fetchJobState } from "../lib/api";
 import { useJobStore } from "../stores/job-store";
 
-const DECK_ID_KEY = "slidely_deck_id";
-
 /**
- * On mount, checks sessionStorage for an active deck ID and
+ * On mount, checks the URL for a job ID and
  * hydrates the store from the server if one is found.
  *
  * This handles page refresh recovery for all states:
@@ -15,6 +14,7 @@ const DECK_ID_KEY = "slidely_deck_id";
  * - FAILED: shows messages + error
  */
 export function useJobRecovery() {
+  const { jobId } = useParams<{ jobId: string }>();
   const hydrateFromServer = useJobStore((s) => s.hydrateFromServer);
   const phase = useJobStore((s) => s.phase);
   const recoveredRef = useRef(false);
@@ -23,25 +23,14 @@ export function useJobRecovery() {
     if (recoveredRef.current || phase !== "idle") return;
     recoveredRef.current = true;
 
-    const deckId = sessionStorage.getItem(DECK_ID_KEY);
-    if (!deckId) return;
+    if (!jobId) return;
 
-    fetchJobState(deckId)
+    fetchJobState(jobId)
       .then((serverState) => {
         hydrateFromServer(serverState);
       })
       .catch(() => {
-        sessionStorage.removeItem(DECK_ID_KEY);
+        // Leave store idle — URL may point to an invalid/expired job
       });
-  }, [hydrateFromServer, phase]);
-}
-
-/** Persist deck ID to sessionStorage for refresh recovery. */
-export function saveDeckId(deckId: string) {
-  sessionStorage.setItem(DECK_ID_KEY, deckId);
-}
-
-/** Clear persisted deck ID. */
-export function clearDeckId() {
-  sessionStorage.removeItem(DECK_ID_KEY);
+  }, [jobId, hydrateFromServer, phase]);
 }

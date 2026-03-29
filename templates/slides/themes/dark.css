@@ -1,0 +1,51 @@
+/* ============================================================
+   Dark Theme — Sophisticated night
+   Slate background, light text, sky-blue accent
+   ============================================================ */
+
+.slide {
+  --slide-bg: #0f172a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #38bdf8;
+  --accent-light: rgba(56, 189, 248, 0.08);
+  --accent-dark: #0ea5e9;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --code-bg: #1e293b;
+  --code-border: #334155;
+  --quote-border: #38bdf8;
+  --table-header-bg: rgba(56, 189, 248, 0.06);
+  --table-border: #1e293b;
+  --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Dark theme: gradient title slide */
+.slide-title {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+.slide-title::before {
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+}
+
+/* Dark theme: section header glow */
+.slide-section-header {
+  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+}
+
+/* Dark theme: image placeholder */
+.slide .image-placeholder {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+/* Dark theme: code blocks with stronger distinction */
+.slide .slide-code {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: #475569;
+}
+
+/* Dark theme: table row striping */
+.slide .slide-table tbody tr:nth-child(even) {
+  background: rgba(56, 189, 248, 0.04);
+}

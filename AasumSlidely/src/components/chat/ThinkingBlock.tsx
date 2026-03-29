@@ -1,3 +1,5 @@
+import { MarkdownRenderer } from "./MarkdownRenderer";
+
 interface ThinkingBlockProps {
   text: string;
 }
@@ -26,7 +28,7 @@ export function ThinkingBlock({ text }: ThinkingBlockProps) {
             color: "rgba(0,0,0,0.5)", lineHeight: 1.5,
             paddingLeft: 22, maxHeight: 120, overflowY: "auto",
           }}>
-            {text}
+            <MarkdownRenderer content={text} dimmed />
           </div>
         )}
       </div>

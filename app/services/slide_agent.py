@@ -17,9 +17,10 @@ from pydantic import BaseModel
 from app.core.logging import get_logger
 from app.core.prompts.registry import get_prompt
 from app.core.schemas.presentation import Presentation
-from app.db.managers import VersionManager
+from app.db.managers.version import VersionManager
 from app.services.orchestration.config import get_agent_config
-from app.services.orchestration.graph import HITLRequest, PresentationGraphBuilder, run_graph
+from app.services.orchestration.graph.graph import PresentationGraphBuilder, run_graph
+from app.services.orchestration.graph.state import HITLRequest
 from app.services.orchestration.graph.tools import ALL_TOOLS, create_tool_executor
 from app.services.orchestration.skills import SkillStore
 from app.services.pusher import trigger as pusher_trigger

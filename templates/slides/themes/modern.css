@@ -1,0 +1,68 @@
+/* ============================================================
+   Modern Theme — Bold contemporary
+   Neutral background, teal accent, confident typography
+   ============================================================ */
+
+.slide {
+  --slide-bg: #fafafa;
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #a1a1aa;
+  --accent: #0d9488;
+  --accent-light: rgba(13, 148, 136, 0.06);
+  --accent-dark: #0f766e;
+  --border-color: rgba(0, 0, 0, 0.05);
+  --code-bg: #f4f4f5;
+  --code-border: #e4e4e7;
+  --quote-border: #0d9488;
+  --table-header-bg: #f0fdfa;
+  --table-border: #e4e4e7;
+  --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Modern theme: bold title treatment */
+.slide-title {
+  background: linear-gradient(135deg, #f0fdfa 0%, #fafafa 50%, #f5f3ff 100%);
+}
+.slide-title::before {
+  height: 5px;
+  background: linear-gradient(90deg, #0d9488, #14b8a6, #2dd4bf);
+}
+.slide-title .slide-main-title {
+  letter-spacing: -0.03em;
+  font-size: 52px;
+}
+
+/* Modern theme: section headers with gradient background */
+.slide-section-header {
+  background: linear-gradient(135deg, var(--accent-light) 0%, transparent 60%);
+}
+.slide-section-header .section-title::after {
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #0d9488, #14b8a6);
+  border-radius: 2px;
+}
+
+/* Modern theme: enhanced quote with gradient border */
+.slide .slide-quote {
+  border-left-width: 5px;
+  border-image: linear-gradient(to bottom, #0d9488, #14b8a6) 1;
+  background: var(--accent-light);
+}
+
+/* Modern theme: accent table headers */
+.slide .slide-table thead tr {
+  background: var(--table-header-bg);
+}
+.slide .slide-table th {
+  color: var(--accent-dark);
+}
+
+/* Modern theme: gradient heading border */
+.slide .slide-heading {
+  border-image: linear-gradient(to bottom, #0d9488, #14b8a6) 1;
+  border-left-width: 4px;
+  border-left-style: solid;
+}

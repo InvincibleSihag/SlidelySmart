@@ -1,0 +1,32 @@
+/* ============================================================
+   Default Theme — Clean professional light
+   White background, dark text, blue accent
+   ============================================================ */
+
+.slide {
+  --slide-bg: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a5568;
+  --text-muted: #a0aec0;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-dark: #1d4ed8;
+  --border-color: rgba(0, 0, 0, 0.06);
+  --code-bg: #f7fafc;
+  --code-border: #e2e8f0;
+  --quote-border: #2563eb;
+  --table-header-bg: #f7fafc;
+  --table-border: #e2e8f0;
+  --font-heading: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Default theme: subtle gradient on title slides */
+.slide-title {
+  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+}
+
+/* Default theme: gradient on section headers */
+.slide-section-header {
+  background: linear-gradient(180deg, #ffffff 0%, var(--accent-light) 100%);
+}

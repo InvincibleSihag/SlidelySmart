@@ -1,5 +1,6 @@
 """Render slide JSON into HTML using Jinja2 templates."""
 
+from functools import lru_cache
 from pathlib import Path
 
 import mistune
@@ -9,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.core.schemas.presentation import Presentation, Slide
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "slides"
+_THEMES_DIR = _TEMPLATES_DIR / "themes"
 
 
 # ---------------------------------------------------------------------------
@@ -17,13 +19,15 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "
 
 # Inline-only renderer: converts **bold**, *italic*, `code`, [link](url)
 # without wrapping in <p> tags or handling block-level elements.
-_inline_md = mistune.create_markdown(escape=False, renderer=mistune.html)
+_inline_md = mistune.create_markdown(escape=False)
 
 
-def _rich_text(value: str) -> Markup:
+def _rich_text(value: str | list) -> Markup:
     """Convert inline markdown to HTML. Returns Markup so Jinja2 won't re-escape."""
+    if isinstance(value, list):
+        value = ", ".join(str(v) for v in value)
     if not isinstance(value, str):
-        return value
+        return Markup(str(value))
     # mistune wraps output in <p>...</p> — strip it for inline use
     result = _inline_md(value).strip()
     if result.startswith("<p>") and result.endswith("</p>"):
@@ -50,6 +54,29 @@ def render_slide(slide: Slide) -> str:
     return template.render(slide=slide)
 
 
+# ---------------------------------------------------------------------------
+# Theme CSS loading
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=16)
+def _load_theme_css(theme: str) -> str:
+    """Load base CSS + theme CSS, concatenated. Falls back to 'default' theme."""
+    base_path = _THEMES_DIR / "base.css"
+    base_css = base_path.read_text() if base_path.is_file() else ""
+
+    theme_path = _THEMES_DIR / f"{theme}.css"
+    if not theme_path.is_file():
+        theme_path = _THEMES_DIR / "default.css"
+    theme_css = theme_path.read_text() if theme_path.is_file() else ""
+
+    return base_css + "\n" + theme_css
+
+
 def render_presentation(presentation: Presentation) -> str:
-    """Render all slides and return a single HTML string."""
-    return "\n".join(render_slide(s) for s in presentation.slides)
+    """Render all slides and return a self-contained HTML string with embedded CSS."""
+    css = _load_theme_css(presentation.theme or "default")
+    if presentation.custom_css:
+        css += "\n" + presentation.custom_css
+
+    slides_html = "\n".join(render_slide(s) for s in presentation.slides)
+    return f"<style>\n{css}\n</style>\n{slides_html}"

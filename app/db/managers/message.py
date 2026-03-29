@@ -55,7 +55,7 @@ class MessageManager:
         for msg in reversed(agent_messages):
             if msg.type != "ai":
                 continue
-            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+            content = str(msg.text)
             if not content.strip():
                 continue
             ai_msg = Message(
